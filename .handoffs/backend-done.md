@@ -358,6 +358,8 @@ workout_checker/
 - **AI Enrichment & n8n Integration**:
   - The `N8N_WEBHOOK_URL` in `.env` is configured to integrate directly with n8n in Production mode: `https://n8n.tutran-dev.id.vn/webhook/enrich-exercise`.
   - **Payload sent to n8n**: `{"exercise_id": <int>, "name_eng": "<string>"}`.
+  - **Connection Timeout**: Set to **`60.0` seconds** to allow sufficient time for LLM generation/inference.
+  - **Flexible Response Envelope Parsing**: The service handles n8n response outputs formatted as either a direct JSON object or a JSON List containing a single result object (e.g. `[{ ... }]`).
   - **Expected response JSON from n8n**:
     ```json
     {
@@ -374,6 +376,7 @@ workout_checker/
     ```
 - **AI Calendar Autofill**:
   - A new endpoint `POST /api/calendar/autofill` calls `N8N_AUTOFILL_WEBHOOK_URL` (`https://n8n.tutran-dev.id.vn/webhook/autofill-exercise`) to fetch suggestions for a routine tag day.
+  - **Connection Timeout**: Set to **`60.0` seconds** to prevent timeouts during routine exercise analysis.
   - **Payload sent to n8n**: `{"workout_date": "YYYY-MM-DD", "routine_tag": "push"}`.
   - **Expected response JSON from n8n**:
     ```json
