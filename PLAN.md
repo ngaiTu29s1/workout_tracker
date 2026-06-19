@@ -170,7 +170,7 @@ APP_PORT=8000
 ### Component 2: Database & Models
 
 #### [NEW] backend/app/models/*.py
-- SQLAlchemy 2.0 async models mapping đúng 4 bảng trong instruct.md
+- SQLAlchemy 2.0 async models mapping 5 bảng (4 bảng gốc trong instruct.md + 1 bảng `daily_overrides` để lưu lịch tập ghi đè từng ngày mà không làm thay đổi preset hàng tuần)
 - Relationships giữa các bảng
 - Index trên `workout_date`, `exercise_id`
 
@@ -180,7 +180,7 @@ APP_PORT=8000
 - Init function tạo tables
 
 #### [NEW] Alembic migrations
-- Initial migration tạo 4 bảng
+- Initial migration tạo 5 bảng
 - Seed data migration
 
 ---

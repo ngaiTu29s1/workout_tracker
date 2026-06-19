@@ -52,6 +52,11 @@ workout_checker/
 │   ├── frontend.md              # Frontend worker instructions
 │   └── infra.md                 # Infrastructure worker instructions
 │
+├── .handoffs/                   # 🔄 Worker handoff documents
+│   ├── infra-done.md            # Infra → Backend handoff
+│   ├── backend-done.md          # Backend → Frontend handoff
+│   └── frontend-done.md         # Frontend → Final review
+│
 ├── backend/
 │   ├── Dockerfile
 │   ├── requirements.txt
@@ -204,14 +209,73 @@ workout_checker/
 
 ---
 
+## 🔄 Handoff Protocol
+
+> Các worker giao tiếp với nhau qua **handoff documents** trong `.handoffs/`.
+> Đây là cơ chế async — worker trước viết, worker sau đọc.
+
+### Khi BẮT ĐẦU làm việc
+1. Đọc TẤT CẢ files trong `.handoffs/` để biết các worker trước đã làm gì
+2. Đặc biệt chú ý:
+   - **"What Was Done"** — để không duplicate work
+   - **"Known Issues"** — để tránh bug đã biết
+   - **"What Next Worker Needs To Do"** — hướng dẫn cụ thể cho bạn
+
+### Khi KẾT THÚC công việc
+Viết handoff document vào `.handoffs/<role>-done.md` với format sau:
+
+```markdown
+# Handoff: <Role> → <Next Role>
+
+**Worker**: <Your Role>
+**Status**: ✅ DONE | ⚠️ PARTIAL | ❌ BLOCKED
+**Timestamp**: <ISO 8601>
+
+---
+
+## What Was Done
+- [x] Task 1
+- [x] Task 2
+- [ ] Task NOT done (explain why)
+
+## Current State
+- Mô tả trạng thái hiện tại (services running, endpoints available, etc.)
+
+## API Endpoints Available (nếu là backend)
+- Liệt kê endpoints đã implement + example curl
+
+## Files Created/Modified
+- Liệt kê files với annotation
+
+## Known Issues / Notes
+- Bugs, warnings, limitations
+
+## What Next Worker Needs To Do
+- Hướng dẫn cụ thể cho worker tiếp theo
+```
+
+### Handoff Chain
+```
+Infra Worker → .handoffs/infra-done.md → Backend Worker reads
+Backend Worker → .handoffs/backend-done.md → Frontend Worker reads
+Frontend Worker → .handoffs/frontend-done.md → Control Plane reviews
+```
+
+> [!IMPORTANT]
+> **BẮT BUỘC** viết handoff khi done. Không viết = worker sau không biết context → conflict/duplicate.
+
+---
+
 ## 🚦 Worker Workflow
 
 1. **Đọc `AGENTS.md`** (file này) để hiểu project context
-2. **Đọc worker prompt** trong `.agents/<role>.md` để hiểu scope cụ thể
-3. **Đọc `PLAN.md`** để hiểu implementation plan
-4. **Kiểm tra code hiện tại** trước khi viết — tránh duplicate/conflict
-5. **Chỉ làm trong scope** — nếu cần thay đổi ngoài scope, báo lại control plane
-6. **Test trước khi báo done** — chạy được, không lỗi syntax/import
+2. **Đọc `.handoffs/`** để biết workers trước đã làm gì
+3. **Đọc worker prompt** trong `.agents/<role>.md` để hiểu scope cụ thể
+4. **Đọc `PLAN.md`** để hiểu implementation plan
+5. **Kiểm tra code hiện tại** trước khi viết — tránh duplicate/conflict
+6. **Chỉ làm trong scope** — nếu cần thay đổi ngoài scope, báo lại control plane
+7. **Test trước khi báo done** — chạy được, không lỗi syntax/import
+8. **Viết handoff** vào `.handoffs/<role>-done.md` trước khi kết thúc
 
 ---
 
@@ -223,3 +287,4 @@ workout_checker/
 | `PLAN.md` | Implementation plan đã approved |
 | `AGENTS.md` | File này — shared agent context |
 | `.agents/*.md` | Worker-specific prompts |
+| `.handoffs/*.md` | Handoff documents giữa các workers |

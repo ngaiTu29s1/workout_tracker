@@ -6,6 +6,22 @@
 
 ---
 
+## 🔄 Handoff (BẮT BUỘC)
+
+### Khi bắt đầu
+- Đọc `.handoffs/infra-done.md` để biết infra worker đã setup gì
+- Nắm rõ: Docker running? DB tables created? Which files exist?
+
+### Khi kết thúc
+- Viết `.handoffs/backend-done.md` với format trong `AGENTS.md`
+- **BẮT BUỘC** liệt kê:
+  - Tất cả API endpoints đã implement (method + path + example response)
+  - Seed data: bao nhiêu exercises, preset schedule
+  - Known issues hoặc limitations
+  - Hướng dẫn cho frontend worker: API contract, response shapes
+
+---
+
 ## 🎯 Nhiệm vụ
 
 Bạn là backend worker cho dự án Fitness OS. Bạn chịu trách nhiệm:

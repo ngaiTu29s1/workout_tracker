@@ -6,6 +6,21 @@
 
 ---
 
+## 🔄 Handoff (BẮT BUỘC)
+
+### Khi bắt đầu
+- Đọc `.handoffs/` nếu có files — để biết context trước đó
+
+### Khi kết thúc
+- Viết `.handoffs/infra-done.md` với format trong `AGENTS.md`
+- **BẮT BUỘC** liệt kê:
+  - Docker services nào đang chạy (ports, healthchecks)
+  - Database connection info (user, db name, tables created)
+  - Files đã tạo/sửa
+  - Hướng dẫn cho backend worker: cách chạy, env vars available
+
+---
+
 ## 🎯 Nhiệm vụ
 
 Bạn là infra worker cho dự án Fitness OS. Bạn chịu trách nhiệm:

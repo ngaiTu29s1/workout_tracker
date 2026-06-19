@@ -6,11 +6,17 @@ from backend.app.config import settings
 class Base(DeclarativeBase):
     pass
 
+from sqlalchemy.pool import NullPool
+import os
+
+is_testing = os.getenv("TESTING") == "True"
+
 # Create async engine and session factory
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=True,  # Set to True to log SQL statements for easy debugging during local setup
-    future=True
+    future=True,
+    poolclass=NullPool if is_testing else None
 )
 
 async_session_maker = async_sessionmaker(
@@ -35,7 +41,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     # Import all models here so they register on Base.metadata
     from backend.app.models.exercise import ExerciseMaster
-    from backend.app.models.preset import WeeklyPreset
+    from backend.app.models.preset import WeeklyPreset, DailyOverride
     from backend.app.models.workout_log import DailyWorkoutLog
     from backend.app.models.stats import WorkoutAggregatedStats
 

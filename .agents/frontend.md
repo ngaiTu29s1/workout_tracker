@@ -6,6 +6,26 @@
 
 ---
 
+## 🔄 Handoff (BẮT BUỘC)
+
+### Khi bắt đầu
+- Đọc `.handoffs/infra-done.md` + `.handoffs/backend-done.md`
+- **ĐẶC BIỆT QUAN TRỌNG**: Đọc kỹ phần "API Endpoints Available" trong `backend-done.md`
+  - Đây là API contract chính xác mà bạn sẽ gọi từ frontend
+  - Response shapes, error formats, query parameters
+- Nắm rõ: Backend đang serve ở port nào? Seed data có gì?
+
+### Khi kết thúc
+- Viết `.handoffs/frontend-done.md` với format trong `AGENTS.md`
+- **BẮT BUỘC** liệt kê:
+  - Views nào đã implement (Catalog, Calendar, Session, Stats)
+  - Components nào đã tạo
+  - Responsive status (mobile/tablet/desktop)
+  - Known UI issues hoặc limitations
+  - Screenshots hoặc mô tả visual nếu có thể
+
+---
+
 ## 🎯 Nhiệm vụ
 
 Bạn là frontend worker cho dự án Fitness OS. Bạn chịu trách nhiệm:
