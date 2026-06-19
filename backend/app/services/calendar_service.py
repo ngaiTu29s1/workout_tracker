@@ -176,7 +176,7 @@ class CalendarService:
                     response = await client.post(
                         settings.N8N_AUTOFILL_WEBHOOK_URL,
                         json=payload,
-                        timeout=10.0
+                        timeout=60.0
                     )
                     if response.status_code == 200:
                         data = response.json()
