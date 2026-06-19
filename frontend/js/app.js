@@ -1,0 +1,87 @@
+// Import stores to execute and register them with Alpine
+import './stores/exercise-store.js';
+import './stores/calendar-store.js';
+import './stores/workout-store.js';
+import './stores/stats-store.js';
+
+document.addEventListener('alpine:init', () => {
+  // Main app controller
+  Alpine.data('app', () => ({
+    activeView: 'session',
+    toasts: [],
+    
+    init() {
+      // 1. Setup hash routing
+      const handleRoute = () => {
+        const hash = window.location.hash.replace('#', '') || 'session';
+        const allowedViews = ['catalog', 'calendar', 'session', 'stats'];
+        const view = allowedViews.includes(hash) ? hash : 'session';
+        
+        this.activeView = view;
+        
+        // Push hash to URL if it's empty
+        if (!window.location.hash) {
+          window.history.replaceState(null, null, `#${view}`);
+        }
+        
+        // Trigger data fetch for the active view
+        this.fetchDataForView(view);
+      };
+      
+      window.addEventListener('hashchange', handleRoute);
+      
+      // 2. Global Toast notification listener
+      window.addEventListener('toast', (e) => {
+        this.addToast(e.detail.message, e.detail.type || 'info');
+      });
+      
+      // 3. Run routing on page load
+      handleRoute();
+    },
+    
+    fetchDataForView(view) {
+      if (view === 'catalog') {
+        Alpine.store('exercises').fetchAll();
+      } else if (view === 'calendar') {
+        Alpine.store('calendar').fetchCalendar();
+        Alpine.store('calendar').fetchPresets();
+      } else if (view === 'session') {
+        // Workout session depends on catalog data for adding custom exercise
+        Alpine.store('exercises').fetchAll().then(() => {
+          Alpine.store('workout').fetchSession();
+        });
+      } else if (view === 'stats') {
+        // Fetch stats overview dashboard data
+        Alpine.store('stats').fetchOverview();
+        
+        // Load exercise stats for trend chart
+        const exStore = Alpine.store('exercises');
+        const statsStore = Alpine.store('stats');
+        
+        const loadTrend = () => {
+          if (exStore.items.length > 0) {
+            // Pick first exercise if none is selected
+            const activeId = statsStore.selectedExerciseId || exStore.items[0].id;
+            statsStore.fetchExerciseStats(activeId);
+          }
+        };
+
+        if (exStore.items.length === 0) {
+          exStore.fetchAll().then(loadTrend);
+        } else {
+          loadTrend();
+        }
+      }
+    },
+    
+    addToast(message, type) {
+      const id = Date.now() + Math.random();
+      this.toasts.push({ id, message, type });
+      
+      // Remove toast after animation completes
+      setTimeout(() => {
+        this.toasts = this.toasts.filter(t => t.id !== id);
+      }, 3000);
+    }
+  }));
+});

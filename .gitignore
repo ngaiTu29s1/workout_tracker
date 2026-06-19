@@ -28,3 +28,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Agent handoffs (ephemeral inter-agent comms)
+.handoffs/

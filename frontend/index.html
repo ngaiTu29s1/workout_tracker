@@ -1,41 +1,753 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" x-data="app" x-cloak>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fitness OS Dev Setup - Static Serve Verified</title>
-    <style>
-        body {
-            background-color: #0a0a0f;
-            color: #f0f0f5;
-            font-family: system-ui, -apple-system, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            padding: 2rem;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-        }
-        h1 {
-            color: #00d4aa;
-            margin-bottom: 0.5rem;
-        }
-        p {
-            color: #8888a0;
-        }
-    </style>
+    <title>Fitness OS - Premium Workout Tracker</title>
+    
+    <!-- CSS Design System -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/views.css">
+
+    <!-- CDN Libraries & Core Modules -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Core JS Application (registers stores first) -->
+    <script type="module" src="js/app.js"></script>
+
+    <!-- Alpine.js Plugins & Core -->
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Fitness OS</h1>
-        <p>Dev Setup &amp; Static Serving Verified successfully!</p>
+
+    <div class="app-container">
+        
+        <!-- Navigation Menu (Bottom on mobile, Sidebar on desktop) -->
+        <nav class="nav-menu">
+            <!-- Catalog Tab -->
+            <a href="#catalog" class="nav-item" :class="activeView === 'catalog' ? 'nav-item--active' : ''">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+                </svg>
+                <span>Catalog</span>
+            </a>
+            
+            <!-- Calendar Tab -->
+            <a href="#calendar" class="nav-item" :class="activeView === 'calendar' ? 'nav-item--active' : ''">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+                </svg>
+                <span>Calendar</span>
+            </a>
+            
+            <!-- Session Tab -->
+            <a href="#session" class="nav-item" :class="activeView === 'session' ? 'nav-item--active' : ''">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14 4.14 5.57 2 7.71 3.43 9.14 2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43-1.43-1.43 2.14-2.28z"/>
+                </svg>
+                <span>Session</span>
+            </a>
+            
+            <!-- Stats Tab -->
+            <a href="#stats" class="nav-item" :class="activeView === 'stats' ? 'nav-item--active' : ''">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+                <span>Stats</span>
+            </a>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Mobile Header -->
+            <header class="app-header">
+                <div class="app-logo">🏋️ Fitness OS</div>
+                <h2 x-text="activeView.charAt(0).toUpperCase() + activeView.slice(1)" style="font-size: var(--font-base); text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;"></h2>
+            </header>
+
+            <!-- ==========================================================================
+               VIEW: EXERCISE CATALOG
+               ========================================================================== -->
+            <section x-show="activeView === 'catalog'" class="view-enter">
+                <div class="catalog-header">
+                    <div class="flex justify-between align-center">
+                        <h1>Exercise Catalog</h1>
+                        <button class="btn btn-primary" @click="$store.exercises.openCreateModal()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <span>Add New</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Search Input -->
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" class="form-control search-input" placeholder="Search exercises by name or muscle..." x-model="$store.exercises.search">
+                    </div>
+
+                    <!-- Muscle & Tag Filters -->
+                    <div class="filter-row">
+                        <span class="chip" :class="!$store.exercises.selectedMuscle && !$store.exercises.selectedTag ? 'chip--active' : ''" @click="$store.exercises.selectedMuscle = ''; $store.exercises.selectedTag = ''">All</span>
+                        
+                        <!-- Muscles -->
+                        <template x-for="muscle in $store.exercises.musclesList" :key="muscle">
+                            <span class="chip" :class="$store.exercises.selectedMuscle === muscle ? 'chip--active' : ''" @click="$store.exercises.selectedMuscle = ($store.exercises.selectedMuscle === muscle ? '' : muscle)" x-text="muscle"></span>
+                        </template>
+
+                        <!-- Tags -->
+                        <template x-for="tag in $store.exercises.tagsList" :key="tag">
+                            <span class="chip" :class="$store.exercises.selectedTag === tag ? 'chip--active' : ''" @click="$store.exercises.selectedTag = ($store.exercises.selectedTag === tag ? '' : tag)" x-text="'#' + tag"></span>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Exercise Cards Grid -->
+                <div x-show="$store.exercises.loading" class="text-center mt-lg">
+                    <div class="spinner"></div>
+                    <p class="text-secondary mt-sm">Loading exercises...</p>
+                </div>
+
+                <div x-show="!$store.exercises.loading && $store.exercises.filteredItems.length === 0" class="text-center mt-lg card">
+                    <p class="text-secondary">No exercises found matching filters.</p>
+                </div>
+
+                <div class="grid grid-1 grid-md-2 grid-lg-3" x-show="!$store.exercises.loading">
+                    <template x-for="ex in $store.exercises.filteredItems" :key="ex.id">
+                        <div class="card exercise-card">
+                            <div class="exercise-card__content">
+                                <div class="exercise-card__media">
+                                    <template x-if="ex.image_url">
+                                        <img :src="ex.image_url" alt="Exercise visual">
+                                    </template>
+                                    <template x-if="!ex.image_url">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                            <path d="M2 8h16v8H2z"></path>
+                                            <line x1="6" y1="8" x2="6" y2="16"></line>
+                                            <line x1="14" y1="8" x2="14" y2="16"></line>
+                                        </svg>
+                                    </template>
+                                </div>
+                                
+                                <div class="exercise-card__title" x-text="ex.name_eng"></div>
+                                <div class="exercise-card__subtitle" x-text="ex.name_vie || 'No Vietnamese Name'"></div>
+                                
+                                <div class="exercise-card__tags">
+                                    <span class="badge badge-accent" x-text="ex.primary_muscle || 'General'"></span>
+                                    <template x-for="tag in ex.tags" :key="tag">
+                                        <span class="badge badge-muted" x-text="'#' + tag"></span>
+                                    </template>
+                                </div>
+
+                                <p class="text-secondary mb-md" style="font-size: var(--font-sm);" x-text="ex.instructions ? ex.instructions.substring(0, 100) + '...' : 'No instructions added yet.'"></p>
+                            </div>
+
+                            <div class="exercise-card__actions">
+                                <button class="btn btn-secondary flex-1" @click="$store.exercises.openEditModal(ex)">Edit</button>
+                                <button class="btn btn-secondary" style="padding: 0 12px;" @click="$store.exercises.enrichExercise(ex.id)" title="AI Enrich Metadata">
+                                    🪄
+                                </button>
+                                <button class="btn btn-danger" style="padding: 0 12px;" @click="$store.exercises.deleteExercise(ex.id)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </section>
+
+
+            <!-- ==========================================================================
+               VIEW: CALENDAR VIEW
+               ========================================================================== -->
+            <section x-show="activeView === 'calendar'" class="view-enter">
+                <div class="flex justify-between align-center mb-lg flex-wrap gap-md">
+                    <div>
+                        <h1>Workout Planner</h1>
+                        <p class="text-secondary mt-xs" x-show="$store.calendar.viewType === 'week'" x-text="$store.calendar.weekRangeLabel"></p>
+                        <p class="text-secondary mt-xs" x-show="$store.calendar.viewType === 'month'" x-text="$store.calendar.monthYearLabel"></p>
+                    </div>
+
+                    <!-- Actions Bar -->
+                    <div class="flex align-center gap-sm">
+                        <!-- View Type Switcher -->
+                        <div class="calendar-view-selector">
+                            <button class="calendar-view-btn" :class="$store.calendar.viewType === 'week' ? 'calendar-view-btn--active' : ''" @click="$store.calendar.viewType = 'week'; $store.calendar.fetchCalendar()">Week</button>
+                            <button class="calendar-view-btn" :class="$store.calendar.viewType === 'month' ? 'calendar-view-btn--active' : ''" @click="$store.calendar.viewType = 'month'; $store.calendar.fetchCalendar()">Month</button>
+                        </div>
+
+                        <!-- Date Navigation -->
+                        <div class="flex align-center gap-xs">
+                            <button class="btn btn-secondary btn-icon" @click="$store.calendar.prev()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                            </button>
+                            <button class="btn btn-secondary" @click="$store.calendar.today()">Today</button>
+                            <button class="btn btn-secondary btn-icon" @click="$store.calendar.next()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                            </button>
+                        </div>
+
+                        <!-- Config presets -->
+                        <button class="btn btn-secondary" @click="$store.calendar.openPresetsModal()">
+                            ⚙️ Presets
+                        </button>
+                    </div>
+                </div>
+
+                <div x-show="$store.calendar.loading" class="text-center mt-lg">
+                    <div class="spinner"></div>
+                </div>
+
+                <!-- WEEK VIEW GRID -->
+                <div class="week-grid" x-show="!$store.calendar.loading && $store.calendar.viewType === 'week'" x-init="
+                    $watch('$store.calendar.days', value => {
+                        $nextTick(() => {
+                            document.querySelectorAll('.day-routine-dropzone').forEach(el => {
+                                // Destroy old sortable instance if any
+                                if (el.sortable) el.sortable.destroy();
+                                
+                                el.sortable = new Sortable(el, {
+                                    group: 'routines',
+                                    animation: 150,
+                                    onEnd: async (evt) => {
+                                        const targetDate = evt.to.getAttribute('data-date');
+                                        const sourceDate = evt.from.getAttribute('data-date');
+                                        const tag = evt.item.getAttribute('data-tag');
+                                        
+                                        if (targetDate === sourceDate) return;
+                                        
+                                        // Save target override
+                                        await $store.calendar.setOverride(targetDate, tag);
+                                        // Remove source override (set to rest or null)
+                                        await $store.calendar.setOverride(sourceDate, null);
+                                    }
+                                });
+                            });
+                        });
+                    })
+                ">
+                    <template x-for="day in $store.calendar.days" :key="day.date">
+                        <div class="calendar-day-box" :class="day.date === $store.calendar.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''">
+                            <div class="calendar-day-box__header">
+                                <span class="calendar-day-box__dayname" x-text="day.weekday_name.substring(0,3)"></span>
+                                <span class="calendar-day-box__number" x-text="new Date(day.date).getDate()"></span>
+                            </div>
+                            
+                            <!-- Routine Drag and Drop Area -->
+                            <div class="day-routine-dropzone" :data-date="day.date" style="min-height: 40px; margin-bottom: var(--space-sm);">
+                                <span class="badge cursor-pointer calendar-day-box__routine" 
+                                      :class="day.routine_tag === 'rest' ? 'badge-muted' : (day.routine_tag === 'push' ? 'badge-accent' : 'badge-purple')"
+                                      :data-tag="day.routine_tag"
+                                      @click="
+                                        const newTag = prompt('Update routine tag (push, pull, leg, cardio, rest):', day.routine_tag);
+                                        if (newTag !== null) $store.calendar.setOverride(day.date, newTag.trim().toLowerCase());
+                                      "
+                                      x-text="day.routine_tag.toUpperCase()"></span>
+                            </div>
+
+                            <!-- List of Exercises logged on this day -->
+                            <div class="calendar-day-box__exercises">
+                                <template x-for="log in day.workout_logs" :key="log.id">
+                                    <div class="calendar-day-box__exercise-item" :class="log.is_completed ? 'calendar-day-box__exercise-item--completed' : ''"
+                                         @click="
+                                            $store.workout.selectedDate = day.date;
+                                            $store.workout.activeExerciseId = log.exercise_id;
+                                            window.location.hash = '#session';
+                                         ">
+                                        <span x-text="log.is_completed ? '✓' : '•'"></span>
+                                        <span x-text="log.exercise ? log.exercise.name_eng : 'Exercise'"></span>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <!-- Quick Jump to logs -->
+                            <button class="btn btn-secondary mt-sm" style="min-height: 36px; padding: 0;" @click="
+                                $store.workout.selectedDate = day.date;
+                                window.location.hash = '#session';
+                            ">
+                                Go Logs
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- MONTH VIEW GRID -->
+                <div x-show="!$store.calendar.loading && $store.calendar.viewType === 'month'" class="view-enter">
+                    <div class="month-grid-header">
+                        <div class="month-grid-header__day">Mon</div>
+                        <div class="month-grid-header__day">Tue</div>
+                        <div class="month-grid-header__day">Wed</div>
+                        <div class="month-grid-header__day">Thu</div>
+                        <div class="month-grid-header__day">Fri</div>
+                        <div class="month-grid-header__day">Sat</div>
+                        <div class="month-grid-header__day">Sun</div>
+                    </div>
+                    <div class="month-grid">
+                        <template x-for="day in $store.calendar.days" :key="day.date">
+                            <div class="calendar-month-day"
+                                 :class="[
+                                    day.date === $store.calendar.formatDateLocal(new Date()) ? 'calendar-month-day--today' : '',
+                                    new Date(day.date).getMonth() !== $store.calendar.currentDate.getMonth() ? 'calendar-month-day--other-month' : ''
+                                 ]"
+                                 @click="
+                                    $store.workout.selectedDate = day.date;
+                                    window.location.hash = '#session';
+                                 ">
+                                <span class="calendar-month-day__number" x-text="new Date(day.date).getDate()"></span>
+                                
+                                <span class="badge" style="font-size: 8px; padding: 2px 4px; align-self: flex-start;"
+                                      :class="day.routine_tag === 'rest' ? 'badge-muted' : 'badge-accent'"
+                                      x-text="day.routine_tag"></span>
+                                
+                                <div class="calendar-month-day__dot-container">
+                                    <template x-for="log in day.workout_logs" :key="log.id">
+                                        <div class="calendar-month-day__dot" :class="log.is_completed ? 'calendar-month-day__dot--completed' : 'calendar-month-day__dot--workout'" :title="log.exercise ? log.exercise.name_eng : ''"></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ==========================================================================
+               VIEW: WORKOUT SESSION TRACKER
+               ========================================================================== -->
+            <section x-show="activeView === 'session'" class="view-enter" x-data="{
+                getVideoEmbedUrl(url) {
+                    if (!url) return '';
+                    if (url.includes('youtube.com/embed/')) return url;
+                    
+                    // Youtube long format
+                    if (url.includes('youtube.com/watch')) {
+                        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                        const match = url.match(regExp);
+                        return match && match[2].length === 11 ? 'https://www.youtube.com/embed/' + match[2] : '';
+                    }
+                    // Youtube short format
+                    if (url.includes('youtu.be/')) {
+                        const parts = url.split('/');
+                        const id = parts[parts.length - 1].split('?')[0];
+                        return 'https://www.youtube.com/embed/' + id;
+                    }
+                    return '';
+                },
+                isDirectVideo(url) {
+                    if (!url) return false;
+                    return url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg');
+                }
+            }">
+                <div class="session-layout">
+                    <!-- Session Navigation Header -->
+                    <div class="flex justify-between align-center card">
+                        <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(-1)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+                        
+                        <div class="text-center">
+                            <h2 x-text="new Date($store.workout.selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })"></h2>
+                            <div class="badge badge-accent mt-sm" x-text="'Today\'s Routine: ' + (($store.calendar.days.find(d => d.date === $store.workout.selectedDate) || {}).routine_tag || 'loading...').toUpperCase()"></div>
+                        </div>
+
+                        <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(1)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="card" x-show="$store.workout.sessionExercises.length > 0">
+                        <div class="flex justify-between align-center mb-sm">
+                            <span class="form-label">Workout Progress</span>
+                            <span class="badge badge-accent" x-text="$store.workout.progressPercentage + '% completed'"></span>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: var(--radius-round); overflow: hidden;">
+                            <div style="background: var(--accent-gradient); height: 100%; transition: width 0.3s ease;" :style="'width: ' + $store.workout.progressPercentage + '%'"></div>
+                        </div>
+                    </div>
+
+                    <div x-show="$store.workout.loading" class="text-center mt-lg">
+                        <div class="spinner"></div>
+                        <p class="text-secondary mt-sm">Fetching workout data...</p>
+                    </div>
+
+                    <div x-show="!$store.workout.loading && $store.workout.sessionExercises.length === 0" class="text-center mt-lg card">
+                        <p class="text-secondary mb-md">No workouts planned for this day.</p>
+                        <button class="btn btn-primary" style="margin: 0 auto;" @click="$store.workout.exerciseSearchOpen = true">Add Custom Exercise</button>
+                    </div>
+
+                    <!-- Session Exercises Accordion list -->
+                    <div class="flex flex-column" style="gap: var(--space-md);" x-show="!$store.workout.loading">
+                        <template x-for="item in $store.workout.sessionExercises" :key="item.exercise.id">
+                            <div class="exercise-log-box" :class="$store.workout.activeExerciseId === item.exercise.id ? 'exercise-log-box--active' : ''">
+                                
+                                <!-- Accordion Header -->
+                                <div class="exercise-log-box__header" @click="$store.workout.activeExerciseId = ($store.workout.activeExerciseId === item.exercise.id ? null : item.exercise.id)">
+                                    <div class="exercise-log-box__title">
+                                        <button class="btn" style="min-height: auto; width: 36px; height: 36px; padding: 0; border-radius: var(--radius-round);"
+                                                :class="item.is_completed ? 'btn-success' : 'btn-secondary'"
+                                                @click.stop="$store.workout.toggleComplete(item)">
+                                            <span x-show="item.is_completed">✓</span>
+                                            <span x-show="!item.is_completed">○</span>
+                                        </button>
+                                        <div>
+                                            <h3 x-text="item.exercise.name_eng" style="font-weight: 700;"></h3>
+                                            <span class="text-secondary" style="font-size: var(--font-xs);" x-text="item.exercise.name_vie || 'No Vietnamese name'"></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex align-center gap-sm">
+                                        <span class="badge" :class="item.isLogged ? 'badge-accent' : 'badge-muted'" x-text="item.isLogged ? 'Logged' : 'Pending'"></span>
+                                        <span x-show="!item.isRecommended" class="badge badge-warning" style="font-size: 8px;">Extra</span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                             :style="$store.workout.activeExerciseId === item.exercise.id ? 'transform: rotate(180deg); transition: transform 0.2s;' : 'transition: transform 0.2s;'"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </div>
+                                </div>
+
+                                <!-- Accordion Body (Only visible when expanded) -->
+                                <div class="exercise-log-box__body" x-show="$store.workout.activeExerciseId === item.exercise.id" x-collapse>
+                                    
+                                    <!-- Video Tutorial Section -->
+                                    <template x-if="item.exercise.video_url">
+                                        <div>
+                                            <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
+                                                <div class="video-container">
+                                                    <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                                </div>
+                                            </template>
+                                            <template x-if="isDirectVideo(item.exercise.video_url)">
+                                                <div class="video-container">
+                                                    <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
+                                                </div>
+                                            </template>
+                                            <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
+                                                <div class="mb-md">
+                                                    <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <!-- Instructions & Pro Tips -->
+                                    <div class="mb-md" x-show="item.exercise.instructions || item.exercise.pro_tips">
+                                        <p class="text-secondary" style="font-size: var(--font-sm);" x-text="item.exercise.instructions"></p>
+                                        <div x-show="item.exercise.pro_tips" class="mt-sm" style="border-left: 2px solid var(--accent-primary); padding-left: var(--space-sm); font-size: var(--font-xs); color: var(--accent-primary);">
+                                            <strong>Pro Tip:</strong> <span x-text="item.exercise.pro_tips"></span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Set Table -->
+                                    <div class="set-rows-container">
+                                        <div class="set-row font-label" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; margin-bottom: 4px;" :class="item.exercise.tracking_type === 'TIME' ? 'set-row--time' : ''">
+                                            <span>Set</span>
+                                            <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                                <span class="text-center">Weight</span>
+                                            </template>
+                                            <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                                <span class="text-center">Reps</span>
+                                            </template>
+                                            <template x-if="item.exercise.tracking_type === 'TIME'">
+                                                <span class="text-center">Duration</span>
+                                            </template>
+                                            <span></span>
+                                        </div>
+
+                                        <template x-for="(setRow, index) in item.tracking_data" :key="index">
+                                            <div class="set-row" :class="item.exercise.tracking_type === 'TIME' ? 'set-row--time' : ''">
+                                                <!-- Set Index -->
+                                                <span class="set-row__number" x-text="setRow.set"></span>
+                                                
+                                                <!-- Metric 1: Weight -->
+                                                <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                                    <div class="set-row__input-group">
+                                                        <input type="number" class="set-row__input" x-model="setRow.kg" placeholder="0" step="any" min="0">
+                                                        <span class="set-row__unit">kg</span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Metric 2: Reps -->
+                                                <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                                    <div class="set-row__input-group">
+                                                        <input type="number" class="set-row__input" x-model="setRow.rep" placeholder="0" min="0">
+                                                        <span class="set-row__unit">rep</span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Metric 3: Time (seconds) -->
+                                                <template x-if="item.exercise.tracking_type === 'TIME'">
+                                                    <div class="set-row__input-group">
+                                                        <input type="number" class="set-row__input" x-model="setRow.time_seconds" placeholder="0" min="0">
+                                                        <span class="set-row__unit">sec</span>
+                                                    </div>
+                                                </template>
+
+                                                <!-- Delete Set Row -->
+                                                <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding:0; border-radius: var(--radius-round);"
+                                                        @click="$store.workout.removeSet(item, index)">
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Set Actions -->
+                                    <div class="flex gap-sm mb-lg">
+                                        <button class="btn btn-secondary flex-1" @click="$store.workout.addSet(item)">+ Add Set</button>
+                                    </div>
+
+                                    <!-- Bottom Save Action Controls -->
+                                    <div class="flex gap-sm">
+                                        <button class="btn btn-primary flex-1 btn-gym" @click="$store.workout.saveLog(item)">Save Log</button>
+                                        <template x-if="item.isLogged">
+                                            <button class="btn btn-danger btn-gym" style="flex: 0 0 56px;" @click="$store.workout.deleteLog(item)">Clear</button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Autocomplete trigger to log additional exercise -->
+                    <div class="card mt-lg" style="position: relative;" x-show="!$store.workout.loading">
+                        <div class="flex justify-between align-center">
+                            <h3>Add Extra Exercise</h3>
+                            <button class="btn btn-secondary" @click="$store.workout.exerciseSearchOpen = !$store.workout.exerciseSearchOpen">
+                                <span x-text="$store.workout.exerciseSearchOpen ? 'Close' : 'Search'"></span>
+                            </button>
+                        </div>
+                        
+                        <div x-show="$store.workout.exerciseSearchOpen" class="mt-md" style="position: relative;">
+                            <input type="text" class="form-control" placeholder="Type exercise name..." x-model="$store.workout.exerciseSearchQuery">
+                            
+                            <!-- Search Autocomplete Dropdown list -->
+                            <div x-show="$store.workout.searchFilteredExercises.length > 0" class="card" style="position: absolute; width:100%; top: 60px; z-index: 50; background: var(--bg-secondary); border-color: var(--accent-primary);">
+                                <div class="flex flex-column" style="gap: var(--space-xs);">
+                                    <template x-for="ex in $store.workout.searchFilteredExercises" :key="ex.id">
+                                        <div class="flex justify-between align-center p-sm cursor-pointer" style="border-radius: var(--radius-sm); padding: 10px;"
+                                             @click="$store.workout.addCustomExercise(ex)"
+                                             onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                                             onmouseout="this.style.background='none'">
+                                            <div>
+                                                <div x-text="ex.name_eng" style="font-weight: 600;"></div>
+                                                <span class="text-secondary" style="font-size: var(--font-xs);" x-text="ex.primary_muscle"></span>
+                                            </div>
+                                            <span class="badge badge-accent">+ Add</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div x-show="$store.workout.exerciseSearchQuery && $store.workout.searchFilteredExercises.length === 0" class="text-secondary text-center mt-sm">No exercises available to add.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ==========================================================================
+               VIEW: STATISTICS DASHBOARD
+               ========================================================================== -->
+            <section x-show="activeView === 'stats'" class="view-enter" x-init="
+                $watch('$store.stats.overview', value => {
+                    $nextTick(() => $store.stats.updateActivityChart());
+                });
+                $watch('$store.stats.exerciseHistory', value => {
+                    $nextTick(() => $store.stats.updateExerciseChart());
+                });
+            ">
+                <div class="stats-header-bar">
+                    <h1>Progress Analytics</h1>
+                    
+                    <!-- Analytics range selector -->
+                    <div class="calendar-view-selector" style="margin-bottom: 0;">
+                        <button class="calendar-view-btn" :class="$store.stats.range === '30d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('30d')">30 Days</button>
+                        <button class="calendar-view-btn" :class="$store.stats.range === '90d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('90d')">90 Days</button>
+                        <button class="calendar-view-btn" :class="$store.stats.range === '180d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('180d')">6 Months</button>
+                    </div>
+                </div>
+
+                <!-- Aggregated Overall Metrics Cards -->
+                <div class="stats-card-grid">
+                    <div class="card stat-metric-card">
+                        <div class="stat-metric-card__value" x-text="$store.stats.overview.total_workouts">0</div>
+                        <div class="stat-metric-card__label">Workouts Logged</div>
+                    </div>
+                    <div class="card stat-metric-card">
+                        <div class="stat-metric-card__value" x-text="$store.stats.overview.total_active_days">0</div>
+                        <div class="stat-metric-card__label">Active Days</div>
+                    </div>
+                    <div class="card stat-metric-card">
+                        <div class="stat-metric-card__value" x-text="Math.round($store.stats.overview.total_volume_kg).toLocaleString() + ' kg'">0 kg</div>
+                        <div class="stat-metric-card__label">Total Volume</div>
+                    </div>
+                    <div class="card stat-metric-card">
+                        <div class="stat-metric-card__value" x-text="$store.stats.overview.total_reps.toLocaleString()">0</div>
+                        <div class="stat-metric-card__label">Total Reps</div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Activity Bar Chart -->
+                <div class="chart-wrapper">
+                    <h2 class="mb-md">Workout Consistency</h2>
+                    <div class="chart-container">
+                        <canvas id="activityChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Exercise Metrics Line Chart -->
+                <div class="chart-wrapper">
+                    <div class="flex justify-between align-center mb-md flex-wrap gap-md">
+                        <h2>Exercise Progression</h2>
+                        
+                        <!-- Exercise Selector & Metric Switcher -->
+                        <div class="flex gap-sm flex-wrap">
+                            <select class="form-control" style="min-height: 40px; padding: 0 10px; width: 200px;"
+                                    :value="$store.stats.selectedExerciseId"
+                                    @change="$store.stats.fetchExerciseStats($event.target.value)">
+                                <template x-for="ex in $store.exercises.items" :key="ex.id">
+                                    <option :value="ex.id" x-text="ex.name_eng"></option>
+                                </template>
+                            </select>
+
+                            <div class="calendar-view-selector" style="margin-bottom: 0;">
+                                <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'volume' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('volume')">Volume</button>
+                                <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'max_weight' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('max_weight')">1RM Est</button>
+                                <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'total_reps' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('total_reps')">Reps</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="$store.stats.loadingExercise" class="text-center mt-lg mb-lg">
+                        <div class="spinner"></div>
+                    </div>
+
+                    <div x-show="!$store.stats.loadingExercise && $store.stats.exerciseHistory.length === 0" class="text-center text-secondary py-lg">
+                        No progress logs available for this exercise in the selected range.
+                    </div>
+
+                    <div class="chart-container" x-show="!$store.stats.loadingExercise && $store.stats.exerciseHistory.length > 0">
+                        <canvas id="exerciseChartCanvas"></canvas>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ==========================================================================
+           MODALS OVERLAYS
+           ========================================================================== -->
+        
+        <!-- Modal: Create / Edit Exercise -->
+        <div class="modal-overlay" x-show="$store.exercises.modalOpen" style="display: none;">
+            <div class="modal-container" @click.away="$store.exercises.modalOpen = false">
+                <div class="modal-header">
+                    <h2 x-text="$store.exercises.editingExercise ? 'Edit Exercise' : 'Create Exercise'"></h2>
+                    <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.exercises.modalOpen = false">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="$store.exercises.saveForm()">
+                        <div class="form-group">
+                            <label class="form-label">English Name *</label>
+                            <input type="text" class="form-control" required placeholder="e.g., Squat" x-model="$store.exercises.form.name_eng">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Vietnamese Name</label>
+                            <input type="text" class="form-control" placeholder="e.g., Gánh đùi" x-model="$store.exercises.form.name_vie">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Primary Muscle</label>
+                            <input type="text" class="form-control" placeholder="e.g., Quads" x-model="$store.exercises.form.primary_muscle">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Secondary Muscles (comma separated)</label>
+                            <input type="text" class="form-control" placeholder="e.g., Hamstrings, Glutes" x-model="$store.exercises.form.secondary_muscle_str">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Routine Tags (comma separated)</label>
+                            <input type="text" class="form-control" placeholder="e.g., leg, lower_body" x-model="$store.exercises.form.tags_str">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tracking Type</label>
+                            <select class="form-control" x-model="$store.exercises.form.tracking_type">
+                                <option value="WEIGHT_REPS">Weight and Reps</option>
+                                <option value="BODYWEIGHT_REPS">Bodyweight Reps</option>
+                                <option value="TIME">Time (seconds)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Video Instruction URL</label>
+                            <input type="url" class="form-control" placeholder="Youtube or direct mp4 link" x-model="$store.exercises.form.video_url">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Image Thumbnail URL</label>
+                            <input type="url" class="form-control" placeholder="Image link" x-model="$store.exercises.form.image_url">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Instructions Text</label>
+                            <textarea class="form-control" placeholder="Step-by-step guidelines..." x-model="$store.exercises.form.instructions"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Pro Tips</label>
+                            <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips"></textarea>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @click="$store.exercises.modalOpen = false">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Exercise</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Edit Weekly Presets Schedule -->
+        <div class="modal-overlay" x-show="$store.calendar.presetsModalOpen" style="display: none;">
+            <div class="modal-container" @click.away="$store.calendar.presetsModalOpen = false">
+                <div class="modal-header">
+                    <h2>Edit Weekly Presets</h2>
+                    <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.calendar.presetsModalOpen = false">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form @submit.prevent="$store.calendar.savePresets()">
+                        <div class="flex flex-column" style="gap: var(--space-md);">
+                            <template x-for="(p, index) in $store.calendar.editingPresets" :key="p.day_of_week">
+                                <div class="flex align-center justify-between">
+                                    <span style="font-weight: 600;" x-text="['', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][p.day_of_week]"></span>
+                                    <select class="form-control" style="width: 150px; min-height: 40px; padding: 0 10px;" x-model="p.routine_tag">
+                                        <option value="push">Push</option>
+                                        <option value="pull">Pull</option>
+                                        <option value="leg">Leg</option>
+                                        <option value="cardio">Cardio</option>
+                                        <option value="rest">Rest</option>
+                                    </select>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="modal-footer mt-lg">
+                            <button type="button" class="btn btn-secondary" @click="$store.calendar.presetsModalOpen = false">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Toast Alerts Overlay -->
+        <div class="toast-container">
+            <template x-for="t in toasts" :key="t.id">
+                <div class="toast" :class="'toast--' + t.type">
+                    <span x-text="t.message"></span>
+                    <button class="toast-close" @click="toasts = toasts.filter(item => item.id !== t.id)">✕</button>
+                </div>
+            </template>
+        </div>
+
     </div>
+
 </body>
 </html>

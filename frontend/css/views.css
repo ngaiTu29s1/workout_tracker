@@ -1,0 +1,522 @@
+/* View-specific Styles */
+
+/* ==========================================================================
+   1. EXERCISE CATALOG VIEW
+   ========================================================================== */
+.catalog-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.search-input {
+  padding-left: var(--space-2xl) !important;
+}
+
+.search-icon {
+  position: absolute;
+  left: var(--space-md);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.filter-row {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding-bottom: var(--space-xs);
+  scrollbar-width: none; /* Firefox */
+}
+
+.filter-row::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+.exercise-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+}
+
+.exercise-card__media {
+  width: 100%;
+  height: 140px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--border-glass);
+}
+
+.exercise-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.exercise-card__media svg {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+}
+
+.exercise-card__content {
+  flex-grow: 1;
+}
+
+.exercise-card__title {
+  font-size: var(--font-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-xs);
+}
+
+.exercise-card__subtitle {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.exercise-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-md);
+}
+
+.exercise-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+/* Floating Action Button (FAB) */
+.fab-btn {
+  position: fixed;
+  bottom: calc(var(--nav-height-mobile) + var(--space-md));
+  right: var(--space-md);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-round);
+  background: var(--accent-gradient);
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 212, 170, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 800;
+  transition: transform var(--transition-fast);
+}
+
+.fab-btn:active {
+  transform: scale(0.9);
+}
+
+@media (min-width: 1024px) {
+  .fab-btn {
+    bottom: var(--space-lg);
+    right: var(--space-lg);
+  }
+}
+
+/* ==========================================================================
+   2. CALENDAR VIEW
+   ========================================================================== */
+.calendar-view-selector {
+  display: flex;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs);
+  margin-bottom: var(--space-md);
+  width: fit-content;
+}
+
+.calendar-view-btn {
+  padding: 6px 16px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: var(--font-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.calendar-view-btn--active {
+  background: var(--bg-glass);
+  color: var(--accent-primary);
+}
+
+/* Week Grid Layout */
+.week-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .week-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+.calendar-day-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  transition: border-color var(--transition-fast);
+}
+
+.calendar-day-box--today {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(0, 212, 170, 0.1);
+  background: rgba(0, 212, 170, 0.02);
+}
+
+.calendar-day-box__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.calendar-day-box__dayname {
+  font-size: var(--font-xs);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.calendar-day-box__number {
+  font-size: var(--font-base);
+  font-weight: 600;
+}
+
+.calendar-day-box__routine {
+  margin: var(--space-xs) 0 var(--space-md) 0;
+  cursor: grab;
+}
+
+.calendar-day-box__routine:active {
+  cursor: grabbing;
+}
+
+.calendar-day-box__exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.calendar-day-box__exercise-item {
+  font-size: var(--font-xs);
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-day-box__exercise-item--completed {
+  color: var(--success);
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Month Grid Layout */
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.month-grid-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}
+
+.month-grid-header__day {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.calendar-month-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  aspect-ratio: 1;
+  padding: var(--space-xs);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: var(--radius-sm);
+  min-height: 70px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.calendar-month-day:hover {
+  background: var(--bg-glass-hover);
+}
+
+.calendar-month-day--today {
+  border-color: var(--accent-primary);
+  background: rgba(0, 212, 170, 0.02);
+}
+
+.calendar-month-day--other-month {
+  opacity: 0.25;
+}
+
+.calendar-month-day__number {
+  font-size: var(--font-sm);
+  font-weight: 600;
+}
+
+.calendar-month-day__dot-container {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.calendar-month-day__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+}
+
+.calendar-month-day__dot--workout {
+  background: var(--accent-secondary);
+}
+
+.calendar-month-day__dot--completed {
+  background: var(--success);
+}
+
+/* ==========================================================================
+   3. WORKOUT SESSION VIEW
+   ========================================================================== */
+.session-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.exercise-log-box {
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  background: var(--bg-glass);
+  overflow: hidden;
+}
+
+.exercise-log-box--active {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 15px rgba(0, 212, 170, 0.1);
+}
+
+.exercise-log-box__header {
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(255, 255, 255, 0.01);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.exercise-log-box__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.exercise-log-box__body {
+  padding: var(--space-lg);
+}
+
+/* Video Instruction wrapper */
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  border: 1px solid var(--border-glass);
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.set-rows-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 40px;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* For TIME tracking type */
+.set-row--time {
+  grid-template-columns: 40px 2fr 40px;
+}
+
+.set-row__number {
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: var(--font-base);
+}
+
+.set-row__input-group {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  height: 48px;
+  overflow: hidden;
+  padding: 0 var(--space-sm);
+}
+
+.set-row__input-group:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px var(--border-glass-focus);
+}
+
+.set-row__input {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-size: var(--font-base);
+  font-weight: 600;
+}
+
+.set-row__input:focus {
+  outline: none;
+}
+
+/* Hide spin-buttons in chrome/safari */
+.set-row__input::-webkit-outer-spin-button,
+.set-row__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide spin-buttons in Firefox */
+.set-row__input[type=number] {
+  -moz-appearance: textfield;
+}
+
+.set-row__unit {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   4. STATS VIEW
+   ========================================================================== */
+.stats-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.stats-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .stats-card-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-metric-card {
+  text-align: center;
+}
+
+.stat-metric-card__value {
+  font-size: var(--font-2xl);
+  font-weight: 800;
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: var(--space-xs);
+}
+
+.stat-metric-card__label {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.chart-wrapper {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+}
+
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
