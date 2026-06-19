@@ -341,7 +341,9 @@ workout_checker/
 │   │   │   └── preset.py       ← MODIFIED (added DailyOverride model)
 │   │   ├── schemas/            ← NEW (all Pydantic validation schemas)
 │   │   ├── services/           ← NEW (exercise, workout, calendar, stats, enrichment)
-│   │   │   └── calendar_service.py ← MODIFIED (added autofill_workout method calling n8n)
+│   │   │   ├── calendar_service.py ← MODIFIED (added autofill_workout method calling n8n)
+│   │   │   ├── exercise_service.py ← MODIFIED (added name title capitalization logic)
+│   │   │   └── enrichment_service.py ← MODIFIED (nuked mock asset URLs to None)
 │   │   ├── seed/
 │   │   │   └── seed_data.py    ← MODIFIED (revised and expanded to 33 clean, correct exercises)
 │   │   └── routers/            ← NEW (exercises, presets, workouts, calendar, stats endpoints)

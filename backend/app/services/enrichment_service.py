@@ -42,7 +42,13 @@ class EnrichmentService:
                         timeout=10.0
                     )
                     if response.status_code == 200:
-                        enriched_data = response.json()
+                        res_json = response.json()
+                        if isinstance(res_json, list) and len(res_json) > 0:
+                            enriched_data = res_json[0]
+                        elif isinstance(res_json, dict):
+                            enriched_data = res_json
+                        else:
+                            enriched_data = {}
                         logger.info("Successfully received enriched metadata from n8n.")
                     else:
                         logger.warning(f"n8n returned status code {response.status_code}. Using mock fallback.")
@@ -89,8 +95,8 @@ class EnrichmentService:
         mock = {
             "name_vie": f"{name_eng} (Bản dịch AI)",
             "instructions": f"Hướng dẫn cho bài tập {name_eng}: Thực hiện đúng tư thế, giữ lưng thẳng, hít vào khi hạ tạ và thở ra khi đẩy tạ.",
-            "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",  # A real public sample video for testing
-            "image_url": "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500",  # Gym image
+            "video_url": None,
+            "image_url": None,
             "pro_tips": "Khởi động kỹ cơ khớp trước khi thực hiện. Không tập quá sức.",
             "tracking_type": "WEIGHT_REPS",
             "primary_muscle": "Full Body",
@@ -103,7 +109,8 @@ class EnrichmentService:
             mock.update({
                 "name_vie": "Đẩy ngực trên ghế bằng",
                 "instructions": "Nằm trên ghế phẳng, nắm thanh đòn rộng hơn vai. Hạ thanh đòn xuống ngực và đẩy mạnh lên.",
-                "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "video_url": None,
+                "image_url": None,
                 "pro_tips": "Giữ bả vai co lại và chạm vào ghế để bảo vệ khớp vai.",
                 "tracking_type": "WEIGHT_REPS",
                 "primary_muscle": "Chest",
@@ -114,7 +121,8 @@ class EnrichmentService:
             mock.update({
                 "name_vie": "Gánh đùi sau/trước (Squat)",
                 "instructions": "Đặt thanh đòn trên cơ cầu vai. Hạ hông xuống như tư thế ngồi ghế cho đến khi đùi song song với sàn, rồi đứng thẳng dậy.",
-                "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "video_url": None,
+                "image_url": None,
                 "pro_tips": "Đẩy gối ra ngoài và giữ cho lưng thẳng suốt quá trình chuyển động.",
                 "tracking_type": "WEIGHT_REPS",
                 "primary_muscle": "Quads",
@@ -125,7 +133,8 @@ class EnrichmentService:
             mock.update({
                 "name_vie": "Kéo tạ đòn (Deadlift)",
                 "instructions": "Đứng sát thanh đòn, gập người nắm thanh đòn. Kéo thanh đòn thẳng lên sát chân bằng lực đùi sau và lưng dưới.",
-                "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "video_url": None,
+                "image_url": None,
                 "pro_tips": "Không bao giờ để lưng cong khi nhấc tạ khỏi mặt đất.",
                 "tracking_type": "WEIGHT_REPS",
                 "primary_muscle": "Back",
@@ -136,7 +145,8 @@ class EnrichmentService:
             mock.update({
                 "name_vie": "Hít xà đơn",
                 "instructions": "Nắm xà đơn rộng hơn vai. Kéo cơ thể lên cho đến khi cằm vượt qua xà, sau đó hạ từ từ xuống.",
-                "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "video_url": None,
+                "image_url": None,
                 "pro_tips": "Tập trung co thắt cơ xô (lats) thay vì kéo bằng lực bắp tay trước.",
                 "tracking_type": "BODYWEIGHT_REPS",
                 "primary_muscle": "Lats",
@@ -147,7 +157,8 @@ class EnrichmentService:
             mock.update({
                 "name_vie": "Tập bụng Plank",
                 "instructions": "Nằm sấp, chống khuỷu tay vuông góc với vai. Giữ cơ thể thẳng từ đầu đến gót chân.",
-                "video_url": "https://www.w3schools.com/html/mov_bbb.mp4",
+                "video_url": None,
+                "image_url": None,
                 "pro_tips": "Siết chặt cơ bụng và mông để giữ hông không bị võng xuống.",
                 "tracking_type": "TIME",
                 "primary_muscle": "Core",
@@ -156,3 +167,4 @@ class EnrichmentService:
             })
             
         return mock
+

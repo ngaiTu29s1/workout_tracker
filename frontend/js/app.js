@@ -97,3 +97,20 @@ document.addEventListener('alpine:init', () => {
     }
   }));
 });
+
+// Dynamically load Alpine plugins and Alpine itself to avoid race conditions with ESM imports
+const loadScript = (src) => {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.defer = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+};
+
+// Load collapse plugin first, then Alpine
+loadScript('https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js')
+  .then(() => loadScript('https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js'))
+  .catch(err => console.error('Failed to load Alpine.js', err));

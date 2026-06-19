@@ -4,6 +4,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.models.exercise import ExerciseMaster
 from backend.app.schemas.exercise import ExerciseCreate, ExerciseUpdate
 
+def title_case_name(name: str) -> str:
+    if not name:
+        return name
+    words = name.split()
+    result = []
+    for word in words:
+        clean_word = word.strip("()")
+        if clean_word.isupper() and len(clean_word) > 1:
+            result.append(word)
+        else:
+            prefix = "(" if word.startswith("(") else ""
+            suffix = ")" if word.endswith(")") else ""
+            result.append(f"{prefix}{clean_word.capitalize()}{suffix}")
+    return " ".join(result)
+
 class ExerciseService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -65,7 +80,7 @@ class ExerciseService:
         """
         # Ensure values conform to instruct.md mapping types
         db_exercise = ExerciseMaster(
-            name_eng=schema.name_eng,
+            name_eng=title_case_name(schema.name_eng),
             name_vie=schema.name_vie,
             instructions=schema.instructions,
             video_url=schema.video_url,
@@ -91,12 +106,16 @@ class ExerciseService:
 
         # Apply updates
         update_data = schema.model_dump(exclude_unset=True)
+        if "name_eng" in update_data and update_data["name_eng"]:
+            update_data["name_eng"] = title_case_name(update_data["name_eng"])
+
         for key, value in update_data.items():
             setattr(exercise, key, value)
 
         await self.db.commit()
         await self.db.refresh(exercise)
         return exercise
+
 
     async def delete_exercise(self, exercise_id: int) -> bool:
         """

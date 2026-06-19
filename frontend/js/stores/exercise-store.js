@@ -4,6 +4,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.store('exercises', {
     items: [],
     loading: false,
+    enrichingIds: [],
     search: '',
     selectedMuscle: '',
     selectedTag: '',
@@ -156,7 +157,7 @@ document.addEventListener('alpine:init', () => {
           // Update in local items list
           const index = this.items.findIndex(ex => ex.id === this.editingExercise.id);
           if (index !== -1) {
-            this.items[index] = res.data;
+            this.items.splice(index, 1, res.data);
           }
           window.dispatchEvent(new CustomEvent('toast', {
             detail: { message: 'Exercise updated successfully', type: 'success' }
@@ -204,6 +205,9 @@ document.addEventListener('alpine:init', () => {
     },
 
     async enrichExercise(id) {
+      if (this.enrichingIds.includes(id)) return;
+      this.enrichingIds.push(id);
+
       window.dispatchEvent(new CustomEvent('toast', {
         detail: { message: 'Starting AI enrichment...', type: 'info' }
       }));
@@ -212,7 +216,7 @@ document.addEventListener('alpine:init', () => {
         // Update local item
         const index = this.items.findIndex(ex => ex.id === id);
         if (index !== -1) {
-          this.items[index] = res.data;
+          this.items.splice(index, 1, res.data);
         }
         this.extractFilters();
         window.dispatchEvent(new CustomEvent('toast', {
@@ -230,6 +234,8 @@ document.addEventListener('alpine:init', () => {
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: err.message || 'AI enrichment failed', type: 'error' }
         }));
+      } finally {
+        this.enrichingIds = this.enrichingIds.filter(x => x !== id);
       }
     }
   });
