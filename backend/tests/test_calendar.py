@@ -71,3 +71,52 @@ async def test_calendar_preset_and_override(client: AsyncClient, db_session: Asy
     events_reverted = response_reverted.json()["data"]
     assert events_reverted[3]["routine_tag"] == "legs"
     assert events_reverted[3]["is_override"] is False
+
+@pytest.mark.asyncio
+async def test_calendar_autofill(client: AsyncClient, db_session: AsyncSession):
+    from backend.app.models.exercise import ExerciseMaster
+
+    # 1. Setup weekly presets
+    presets = [
+        WeeklyPreset(day_of_week=1, routine_tag="rest"), # Sunday
+        WeeklyPreset(day_of_week=2, routine_tag="push"), # Monday
+        WeeklyPreset(day_of_week=3, routine_tag="pull"), # Tuesday
+        WeeklyPreset(day_of_week=4, routine_tag="legs"), # Wednesday
+        WeeklyPreset(day_of_week=5, routine_tag="push"), # Thursday
+        WeeklyPreset(day_of_week=6, routine_tag="pull"), # Friday
+        WeeklyPreset(day_of_week=7, routine_tag="legs")  # Saturday
+    ]
+    db_session.add_all(presets)
+
+    # 2. Setup a mock exercise with the tag "legs"
+    ex = ExerciseMaster(
+        id=99,
+        name_eng="Test Squat",
+        name_vie="Squat test",
+        tracking_type="WEIGHT_REPS",
+        tags=["legs", "compound"]
+    )
+    db_session.add(ex)
+    await db_session.commit()
+
+    # 3. Trigger autofill for a legs day (Wednesday, June 17, 2026)
+    autofill_payload = {
+        "workout_date": "2026-06-17"
+    }
+    response = await client.post("/api/calendar/autofill", json=autofill_payload)
+    assert response.status_code == 200
+    
+    logs = response.json()["data"]
+    assert len(logs) == 1
+    assert logs[0]["exercise_id"] == 99
+    assert logs[0]["workout_date"] == "2026-06-17"
+    assert logs[0]["is_completed"] is False
+
+    # 4. Trigger autofill for a rest day (Sunday, June 14, 2026)
+    rest_autofill_payload = {
+        "workout_date": "2026-06-14"
+    }
+    rest_response = await client.post("/api/calendar/autofill", json=rest_autofill_payload)
+    assert rest_response.status_code == 400
+    assert "Cannot autofill" in rest_response.json()["detail"]
+

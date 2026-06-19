@@ -405,3 +405,87 @@ textarea.form-control {
     transform: translateY(0) scale(1);
   }
 }
+
+/* Routine-specific Badge & Chip Styles */
+.badge--push {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-primary);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+}
+.badge--pull {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent-secondary);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+.badge--legs {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+.badge--upper-body {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+.badge--lower-body {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--accent-amber);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+}
+.badge--core {
+  background: rgba(236, 72, 153, 0.15);
+  color: var(--accent-pink);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+}
+.badge--cardio {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+.badge--rest {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-glass);
+}
+
+.chip--push.chip--active {
+  background: rgba(0, 212, 170, 0.15);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+.chip--pull.chip--active {
+  background: rgba(124, 58, 237, 0.15);
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+.chip--legs.chip--active {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+  border-color: var(--warning);
+}
+.chip--upper-body.chip--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+}
+.chip--lower-body.chip--active {
+  background: rgba(217, 119, 6, 0.15);
+  color: var(--accent-amber);
+  border-color: var(--accent-amber);
+}
+.chip--core.chip--active {
+  background: rgba(236, 72, 153, 0.15);
+  color: var(--accent-pink);
+  border-color: var(--accent-pink);
+}
+.chip--cardio.chip--active {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.chip--rest.chip--active {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-color: var(--text-secondary);
+}
+

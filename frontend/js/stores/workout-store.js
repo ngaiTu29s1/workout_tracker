@@ -95,13 +95,15 @@ document.addEventListener('alpine:init', () => {
 
     matchesRoutine(ex, tag) {
       if (!tag || tag === 'rest') return false;
-      const lowerTag = tag.toLowerCase();
-      
-      const inTags = ex.tags && ex.tags.some(t => t.toLowerCase() === lowerTag);
+      const lowerTag = tag.toLowerCase().replace(' ', '_');
+
+      const inTags = ex.tags && ex.tags.some(t => {
+        const lt = t.toLowerCase().replace(' ', '_');
+        return lt === lowerTag || (lowerTag === 'legs' && lt === 'leg') || (lowerTag === 'leg' && lt === 'legs');
+      });
       const isPrimary = ex.primary_muscle && ex.primary_muscle.toLowerCase() === lowerTag;
       const isSecondary = ex.secondary_muscle && ex.secondary_muscle.some(sm => sm.toLowerCase() === lowerTag);
-      
-      // Special mapping for common presets: pull -> back/biceps, push -> chest/shoulders/triceps, leg -> quads/hamstrings/calves/glutes
+
       if (lowerTag === 'push') {
         const chestShoulderTricep = ['chest', 'shoulders', 'triceps', 'push'];
         return inTags || 
@@ -118,6 +120,30 @@ document.addEventListener('alpine:init', () => {
         const legsMuscles = ['quads', 'hamstrings', 'calves', 'glutes', 'leg', 'legs'];
         return inTags || 
           (ex.primary_muscle && legsMuscles.includes(ex.primary_muscle.toLowerCase()));
+      }
+
+      if (lowerTag === 'upper_body') {
+        const upperMuscles = ['chest', 'shoulders', 'triceps', 'back', 'biceps', 'forearms', 'push', 'pull', 'upper_body', 'upper body'];
+        return inTags || 
+          (ex.primary_muscle && upperMuscles.includes(ex.primary_muscle.toLowerCase()));
+      }
+
+      if (lowerTag === 'lower_body') {
+        const lowerMuscles = ['quads', 'hamstrings', 'calves', 'glutes', 'leg', 'legs', 'lower_body', 'lower body'];
+        return inTags || 
+          (ex.primary_muscle && lowerMuscles.includes(ex.primary_muscle.toLowerCase()));
+      }
+
+      if (lowerTag === 'core') {
+        const coreMuscles = ['core', 'abs', 'obliques', 'lower back'];
+        return inTags || 
+          (ex.primary_muscle && coreMuscles.includes(ex.primary_muscle.toLowerCase()));
+      }
+
+      if (lowerTag === 'cardio') {
+        const cardioMuscles = ['cardio', 'conditioning', 'stretching', 'warmup'];
+        return inTags || 
+          (ex.primary_muscle && cardioMuscles.includes(ex.primary_muscle.toLowerCase()));
       }
 
       return inTags || isPrimary || isSecondary;

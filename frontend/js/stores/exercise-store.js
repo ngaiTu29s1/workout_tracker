@@ -7,6 +7,15 @@ document.addEventListener('alpine:init', () => {
     search: '',
     selectedMuscle: '',
     selectedTag: '',
+    routineTags: [
+      { value: 'push', label: 'Push' },
+      { value: 'pull', label: 'Pull' },
+      { value: 'legs', label: 'Legs' },
+      { value: 'upper_body', label: 'Upper Body' },
+      { value: 'lower_body', label: 'Lower Body' },
+      { value: 'core', label: 'Core' },
+      { value: 'cardio', label: 'Cardio' }
+    ],
     
     // For editing/creating modal form state
     modalOpen: false,
@@ -60,23 +69,28 @@ document.addEventListener('alpine:init', () => {
     },
 
     get filteredItems() {
-      return this.items.filter(ex => {
-        // Search filter
+      const filtered = this.items.filter(ex => {
+        // Search filter (name, vietnamese name, primary muscle, secondary muscle)
         const matchesSearch = !this.search || 
           ex.name_eng.toLowerCase().includes(this.search.toLowerCase()) ||
           (ex.name_vie && ex.name_vie.toLowerCase().includes(this.search.toLowerCase())) ||
-          (ex.primary_muscle && ex.primary_muscle.toLowerCase().includes(this.search.toLowerCase()));
+          (ex.primary_muscle && ex.primary_muscle.toLowerCase().includes(this.search.toLowerCase())) ||
+          (ex.secondary_muscle && ex.secondary_muscle.some(m => m.toLowerCase().includes(this.search.toLowerCase())));
 
-        // Muscle filter
-        const matchesMuscle = !this.selectedMuscle || 
-          ex.primary_muscle === this.selectedMuscle || 
-          (ex.secondary_muscle && ex.secondary_muscle.includes(this.selectedMuscle));
-
-        // Tag filter
+        // Tag filter (matches against routine_tag)
         const matchesTag = !this.selectedTag || 
-          (ex.tags && ex.tags.includes(this.selectedTag));
+          (ex.tags && ex.tags.some(t => t.toLowerCase().replace(' ', '_') === this.selectedTag.toLowerCase().replace(' ', '_')));
 
-        return matchesSearch && matchesMuscle && matchesTag;
+        return matchesSearch && matchesTag;
+      });
+
+      // Sort by created_at DESC (newest first)
+      return filtered.sort((a, b) => {
+        const da = a.created_at || '';
+        const db = b.created_at || '';
+        if (da < db) return 1;
+        if (da > db) return -1;
+        return 0;
       });
     },
 

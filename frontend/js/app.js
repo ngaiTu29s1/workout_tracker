@@ -10,6 +10,18 @@ document.addEventListener('alpine:init', () => {
     activeView: 'session',
     toasts: [],
     
+    getRoutineTagClass(tag) {
+      const t = (tag || '').toLowerCase().replace(' ', '_');
+      if (t === 'push') return 'badge--push';
+      if (t === 'pull') return 'badge--pull';
+      if (t === 'legs' || t === 'leg') return 'badge--legs';
+      if (t === 'upper_body') return 'badge--upper-body';
+      if (t === 'lower_body') return 'badge--lower-body';
+      if (t === 'core') return 'badge--core';
+      if (t === 'cardio') return 'badge--cardio';
+      return 'badge--rest';
+    },
+    
     init() {
       // 1. Setup hash routing
       const handleRoute = () => {

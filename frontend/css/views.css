@@ -30,8 +30,11 @@
 
 .filter-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: var(--space-sm);
   overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: var(--space-xs);
   scrollbar-width: none; /* Firefox */
 }
@@ -520,3 +523,46 @@
   height: 300px;
   width: 100%;
 }
+
+/* Routine Tag Palette & Day Popover */
+.routine-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glass);
+}
+
+.routine-tag-item {
+  cursor: grab !important;
+  user-select: none;
+}
+
+.routine-tag-item:active {
+  cursor: grabbing !important;
+}
+
+.routine-popover {
+  position: absolute;
+  z-index: 1000;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 160px;
+  padding: var(--space-sm);
+  background: var(--bg-secondary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.day-routine-dropzone-container {
+  position: relative;
+  width: 100%;
+}
+

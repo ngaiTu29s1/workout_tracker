@@ -13,6 +13,9 @@ class OverrideRequest(BaseModel):
     workout_date: datetime.date
     routine_tag: Optional[str] = None  # e.g., push, pull, leg, rest. None to revert to preset.
 
+class AutofillRequest(BaseModel):
+    workout_date: datetime.date
+
 @router.get("")
 async def get_calendar(
     start: Optional[str] = Query(None, description="Start date in YYYY-MM-DD format"),
@@ -67,3 +70,20 @@ async def set_override(schema: OverrideRequest, db: AsyncSession = Depends(get_d
         "message": "Routine override updated successfully",
         "status": "ok"
     }
+
+@router.post("/autofill")
+async def autofill_workout(schema: AutofillRequest, db: AsyncSession = Depends(get_db)):
+    service = CalendarService(db)
+    try:
+        logs = await service.autofill_workout(schema.workout_date)
+        return {
+            "data": logs,
+            "message": "Workout routine autofilled successfully",
+            "status": "ok"
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+

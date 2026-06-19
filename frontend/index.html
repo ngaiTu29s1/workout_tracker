@@ -91,18 +91,15 @@
                         <input type="text" class="form-control search-input" placeholder="Search exercises by name or muscle..." x-model="$store.exercises.search">
                     </div>
 
-                    <!-- Muscle & Tag Filters -->
+                    <!-- Tag Filters (Horizontal scroll) -->
                     <div class="filter-row">
-                        <span class="chip" :class="!$store.exercises.selectedMuscle && !$store.exercises.selectedTag ? 'chip--active' : ''" @click="$store.exercises.selectedMuscle = ''; $store.exercises.selectedTag = ''">All</span>
+                        <span class="chip" :class="!$store.exercises.selectedTag ? 'chip--active' : ''" @click="$store.exercises.selectedTag = ''; $store.exercises.selectedMuscle = '';">All</span>
                         
-                        <!-- Muscles -->
-                        <template x-for="muscle in $store.exercises.musclesList" :key="muscle">
-                            <span class="chip" :class="$store.exercises.selectedMuscle === muscle ? 'chip--active' : ''" @click="$store.exercises.selectedMuscle = ($store.exercises.selectedMuscle === muscle ? '' : muscle)" x-text="muscle"></span>
-                        </template>
-
-                        <!-- Tags -->
-                        <template x-for="tag in $store.exercises.tagsList" :key="tag">
-                            <span class="chip" :class="$store.exercises.selectedTag === tag ? 'chip--active' : ''" @click="$store.exercises.selectedTag = ($store.exercises.selectedTag === tag ? '' : tag)" x-text="'#' + tag"></span>
+                        <template x-for="tag in $store.exercises.routineTags" :key="tag.value">
+                            <span class="chip" 
+                                  :class="$store.exercises.selectedTag === tag.value ? 'chip--active chip--' + tag.value.replace('_', '-') : ''" 
+                                  @click="$store.exercises.selectedTag = ($store.exercises.selectedTag === tag.value ? '' : tag.value)" 
+                                  x-text="tag.label"></span>
                         </template>
                     </div>
                 </div>
@@ -141,7 +138,7 @@
                                 <div class="exercise-card__tags">
                                     <span class="badge badge-accent" x-text="ex.primary_muscle || 'General'"></span>
                                     <template x-for="tag in ex.tags" :key="tag">
-                                        <span class="badge badge-muted" x-text="'#' + tag"></span>
+                                         <span class="badge" :class="getRoutineTagClass(tag)" x-text="'#' + tag"></span>
                                     </template>
                                 </div>
 
@@ -204,6 +201,21 @@
                     <div class="spinner"></div>
                 </div>
 
+                <!-- Tag Palette for Drag and Drop -->
+                <div id="routinePalette" class="routine-palette mb-md flex align-center gap-xs flex-wrap"
+                     x-show="!$store.calendar.loading && $store.calendar.viewType === 'week'"
+                     x-init="new Sortable($el, { group: { name: 'routines', pull: 'clone', put: false }, sort: false, animation: 150 })">
+                    <span class="text-secondary mr-sm" style="font-size: var(--font-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Routine Tag Palette (Drag to Days):</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--push" data-tag="push">PUSH</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--pull" data-tag="pull">PULL</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--legs" data-tag="legs">LEGS</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--upper-body" data-tag="upper_body">UPPER BODY</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--lower-body" data-tag="lower_body">LOWER BODY</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--core" data-tag="core">CORE</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--cardio" data-tag="cardio">CARDIO</span>
+                    <span class="badge cursor-pointer routine-tag-item badge--rest" data-tag="rest">REST</span>
+                </div>
+
                 <!-- WEEK VIEW GRID -->
                 <div class="week-grid" x-show="!$store.calendar.loading && $store.calendar.viewType === 'week'" x-init="
                     $watch('$store.calendar.days', value => {
@@ -215,16 +227,16 @@
                                 el.sortable = new Sortable(el, {
                                     group: 'routines',
                                     animation: 150,
-                                    onEnd: async (evt) => {
-                                        const targetDate = evt.to.getAttribute('data-date');
-                                        const sourceDate = evt.from.getAttribute('data-date');
+                                    onAdd: async (evt) => {
+                                        const targetDate = el.getAttribute('data-date');
                                         const tag = evt.item.getAttribute('data-tag');
-                                        
-                                        if (targetDate === sourceDate) return;
-                                        
-                                        // Save target override
                                         await $store.calendar.setOverride(targetDate, tag);
-                                        // Remove source override (set to rest or null)
+                                        if (evt.item.parentNode) {
+                                            evt.item.parentNode.removeChild(evt.item);
+                                        }
+                                    },
+                                    onRemove: async (evt) => {
+                                        const sourceDate = el.getAttribute('data-date');
                                         await $store.calendar.setOverride(sourceDate, null);
                                     }
                                 });
@@ -233,46 +245,52 @@
                     })
                 ">
                     <template x-for="day in $store.calendar.days" :key="day.date">
-                        <div class="calendar-day-box" :class="day.date === window.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''">
+                        <div class="calendar-day-box cursor-pointer"
+                             :class="day.date === window.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''"
+                             x-data="{ popoverOpen: false }"
+                             @click="
+                                $store.workout.selectedDate = day.date;
+                                window.location.hash = '#session';
+                             ">
                             <div class="calendar-day-box__header">
                                 <span class="calendar-day-box__dayname" x-text="day.weekday_name.substring(0,3)"></span>
                                 <span class="calendar-day-box__number" x-text="new Date(day.date).getDate()"></span>
                             </div>
                             
                             <!-- Routine Drag and Drop Area -->
-                            <div class="day-routine-dropzone" :data-date="day.date" style="min-height: 40px; margin-bottom: var(--space-sm);">
-                                <span class="badge cursor-pointer calendar-day-box__routine" 
-                                      :class="day.routine_tag === 'rest' ? 'badge-muted' : (day.routine_tag === 'push' ? 'badge-accent' : 'badge-purple')"
-                                      :data-tag="day.routine_tag"
-                                      @click="
-                                        const newTag = prompt('Update routine tag (push, pull, leg, cardio, rest):', day.routine_tag);
-                                        if (newTag !== null) $store.calendar.setOverride(day.date, newTag.trim().toLowerCase());
-                                      "
-                                      x-text="day.routine_tag.toUpperCase()"></span>
-                            </div>
+                            <div class="day-routine-dropzone-container" @click.stop="">
+                                <div class="day-routine-dropzone" :data-date="day.date" style="min-height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.01); border-radius: var(--radius-sm); border: 1px dashed rgba(255,255,255,0.05); margin-bottom: var(--space-xs);">
+                                    <span class="badge cursor-pointer calendar-day-box__routine" 
+                                          :class="getRoutineTagClass(day.routine_tag)"
+                                          :data-tag="day.routine_tag"
+                                          @click="popoverOpen = !popoverOpen"
+                                          x-text="day.routine_tag.toUpperCase().replace('_', ' ')"></span>
+                                </div>
 
-                            <!-- List of Exercises logged on this day -->
-                            <div class="calendar-day-box__exercises">
-                                <template x-for="log in day.workout_logs" :key="log.id">
-                                    <div class="calendar-day-box__exercise-item" :class="log.is_completed ? 'calendar-day-box__exercise-item--completed' : ''"
-                                         @click="
-                                            $store.workout.selectedDate = day.date;
-                                            $store.workout.activeExerciseId = log.exercise_id;
-                                            window.location.hash = '#session';
-                                         ">
-                                        <span x-text="log.is_completed ? '✓' : '•'"></span>
-                                        <span x-text="log.exercise ? log.exercise.name_eng : 'Exercise'"></span>
-                                    </div>
-                                </template>
+                                <!-- Popover change tag menu -->
+                                <div x-show="popoverOpen" @click.away="popoverOpen = false" class="routine-popover" style="display: none;">
+                                    <span class="form-label" style="font-size: 10px; margin-bottom: var(--space-xs); display: block; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Update Routine</span>
+                                    <template x-for="tagObj in [
+                                        { value: 'push', label: 'Push' },
+                                        { value: 'pull', label: 'Pull' },
+                                        { value: 'legs', label: 'Legs' },
+                                        { value: 'upper_body', label: 'Upper Body' },
+                                        { value: 'lower_body', label: 'Lower Body' },
+                                        { value: 'core', label: 'Core' },
+                                        { value: 'cardio', label: 'Cardio' },
+                                        { value: 'rest', label: 'Rest' }
+                                    ]" :key="tagObj.value">
+                                        <button class="btn btn-secondary" style="min-height: 32px; padding: 4px 8px; font-size: var(--font-xs); justify-content: flex-start; text-transform: uppercase;"
+                                                @click="$store.calendar.setOverride(day.date, tagObj.value); popoverOpen = false;"
+                                                x-text="tagObj.label"></button>
+                                    </template>
+                                    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 4px 0;">
+                                    <button class="btn btn-danger" style="min-height: 32px; padding: 4px 8px; font-size: var(--font-xs); justify-content: flex-start; text-transform: uppercase;"
+                                            @click="$store.calendar.setOverride(day.date, null); popoverOpen = false;">
+                                        Reset Preset
+                                    </button>
+                                </div>
                             </div>
-                            
-                            <!-- Quick Jump to logs -->
-                            <button class="btn btn-secondary mt-sm" style="min-height: 36px; padding: 0;" @click="
-                                $store.workout.selectedDate = day.date;
-                                window.location.hash = '#session';
-                            ">
-                                Go Logs
-                            </button>
                         </div>
                     </template>
                 </div>
@@ -302,14 +320,8 @@
                                 <span class="calendar-month-day__number" x-text="new Date(day.date).getDate()"></span>
                                 
                                 <span class="badge" style="font-size: 8px; padding: 2px 4px; align-self: flex-start;"
-                                      :class="day.routine_tag === 'rest' ? 'badge-muted' : 'badge-accent'"
-                                      x-text="day.routine_tag"></span>
-                                
-                                <div class="calendar-month-day__dot-container">
-                                    <template x-for="log in day.workout_logs" :key="log.id">
-                                        <div class="calendar-month-day__dot" :class="log.is_completed ? 'calendar-month-day__dot--completed' : 'calendar-month-day__dot--workout'" :title="log.exercise ? log.exercise.name_eng : ''"></div>
-                                    </template>
-                                </div>
+                                      :class="getRoutineTagClass(day.routine_tag)"
+                                      x-text="day.routine_tag.toUpperCase().replace('_', ' ')"></span>
                             </div>
                         </template>
                     </div>
@@ -353,7 +365,7 @@
                         
                         <div class="text-center">
                             <h2 x-text="new Date($store.workout.selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })"></h2>
-                            <div class="badge badge-accent mt-sm" x-text="'Today\'s Routine: ' + ($store.workout.routineTag || 'loading...').toUpperCase()"></div>
+                            <div class="badge mt-sm" :class="getRoutineTagClass($store.workout.routineTag)" x-text="'Today\'s Routine: ' + ($store.workout.routineTag || 'loading...').toUpperCase().replace('_', ' ')"></div>
                         </div>
 
                         <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(1)">
