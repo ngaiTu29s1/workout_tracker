@@ -16,7 +16,9 @@ document.addEventListener('alpine:init', () => {
     viewType: 'week', // 'week' or 'month'
     currentDate: new Date(),
     presets: {}, // day_of_week -> routine_tag
-    formatDateLocal: formatDateLocal,
+    formatDateLocal(date) {
+      return formatDateLocal(date);
+    },
     
     // Preset Editing Modal state
     presetsModalOpen: false,

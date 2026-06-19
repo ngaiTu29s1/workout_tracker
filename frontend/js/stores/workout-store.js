@@ -4,6 +4,7 @@ import { formatDateLocal } from './calendar-store.js';
 document.addEventListener('alpine:init', () => {
   Alpine.store('workout', {
     selectedDate: formatDateLocal(new Date()),
+    routineTag: 'rest', // routine tag for the selected date
     logs: [], // actual saved logs from API
     sessionExercises: [], // combined logs + recommended exercises
     loading: false,
@@ -12,11 +13,6 @@ document.addEventListener('alpine:init', () => {
     // Quick search list for adding custom exercise to today's workout
     exerciseSearchQuery: '',
     exerciseSearchOpen: false,
-
-    async init() {
-      // Fetch today's logs on init
-      await this.fetchSession();
-    },
 
     async refreshTodaySession() {
       // Safely called to refresh the current list
@@ -34,6 +30,7 @@ document.addEventListener('alpine:init', () => {
         const calRes = await api.get(`/calendar?start=${this.selectedDate}&end=${this.selectedDate}`);
         const todayEvent = calRes.data && calRes.data[0];
         const routineTag = todayEvent ? todayEvent.routine_tag : 'rest';
+        this.routineTag = routineTag;
 
         // 3. Make sure exercise master items are loaded
         const exerciseStore = Alpine.store('exercises');

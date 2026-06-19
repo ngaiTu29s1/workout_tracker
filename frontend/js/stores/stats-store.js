@@ -75,7 +75,7 @@ document.addEventListener('alpine:init', () => {
 
     updateActivityChart() {
       const ctx = document.getElementById('activityChartCanvas');
-      if (!ctx) return; // view not loaded yet or canvas missing
+      if (!ctx || ctx.offsetParent === null) return; // view not loaded yet, canvas missing or hidden
 
       // Reverse recent activity to show in chronological order
       const sortedActivity = [...this.overview.recent_activity].reverse();
@@ -161,7 +161,7 @@ document.addEventListener('alpine:init', () => {
 
     updateExerciseChart() {
       const ctx = document.getElementById('exerciseChartCanvas');
-      if (!ctx) return; // view not loaded yet
+      if (!ctx || ctx.offsetParent === null) return; // view not loaded yet or hidden
 
       const labels = this.exerciseHistory.map(h => {
         const dateObj = new Date(h.date);

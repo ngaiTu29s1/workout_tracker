@@ -233,7 +233,7 @@
                     })
                 ">
                     <template x-for="day in $store.calendar.days" :key="day.date">
-                        <div class="calendar-day-box" :class="day.date === $store.calendar.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''">
+                        <div class="calendar-day-box" :class="day.date === window.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''">
                             <div class="calendar-day-box__header">
                                 <span class="calendar-day-box__dayname" x-text="day.weekday_name.substring(0,3)"></span>
                                 <span class="calendar-day-box__number" x-text="new Date(day.date).getDate()"></span>
@@ -292,7 +292,7 @@
                         <template x-for="day in $store.calendar.days" :key="day.date">
                             <div class="calendar-month-day"
                                  :class="[
-                                    day.date === $store.calendar.formatDateLocal(new Date()) ? 'calendar-month-day--today' : '',
+                                    day.date === window.formatDateLocal(new Date()) ? 'calendar-month-day--today' : '',
                                     new Date(day.date).getMonth() !== $store.calendar.currentDate.getMonth() ? 'calendar-month-day--other-month' : ''
                                  ]"
                                  @click="
@@ -353,7 +353,7 @@
                         
                         <div class="text-center">
                             <h2 x-text="new Date($store.workout.selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })"></h2>
-                            <div class="badge badge-accent mt-sm" x-text="'Today\'s Routine: ' + (($store.calendar.days.find(d => d.date === $store.workout.selectedDate) || {}).routine_tag || 'loading...').toUpperCase()"></div>
+                            <div class="badge badge-accent mt-sm" x-text="'Today\'s Routine: ' + ($store.workout.routineTag || 'loading...').toUpperCase()"></div>
                         </div>
 
                         <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(1)">
@@ -553,6 +553,24 @@
                VIEW: STATISTICS DASHBOARD
                ========================================================================== -->
             <section x-show="activeView === 'stats'" class="view-enter" x-init="
+                $watch('activeView', value => {
+                    if (value === 'stats') {
+                        $nextTick(() => {
+                            $store.stats.updateActivityChart();
+                            $store.stats.updateExerciseChart();
+                        });
+                    }
+                });
+                $watch('$store.stats.loadingOverview', value => {
+                    if (!value) {
+                        $nextTick(() => $store.stats.updateActivityChart());
+                    }
+                });
+                $watch('$store.stats.loadingExercise', value => {
+                    if (!value) {
+                        $nextTick(() => $store.stats.updateExerciseChart());
+                    }
+                });
                 $watch('$store.stats.overview', value => {
                     $nextTick(() => $store.stats.updateActivityChart());
                 });
@@ -655,19 +673,19 @@
                             <label class="form-label">English Name *</label>
                             <input type="text" class="form-control" required placeholder="e.g., Squat" x-model="$store.exercises.form.name_eng">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Vietnamese Name</label>
                             <input type="text" class="form-control" placeholder="e.g., Gánh đùi" x-model="$store.exercises.form.name_vie">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Primary Muscle</label>
                             <input type="text" class="form-control" placeholder="e.g., Quads" x-model="$store.exercises.form.primary_muscle">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Secondary Muscles (comma separated)</label>
                             <input type="text" class="form-control" placeholder="e.g., Hamstrings, Glutes" x-model="$store.exercises.form.secondary_muscle_str">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Routine Tags (comma separated)</label>
                             <input type="text" class="form-control" placeholder="e.g., leg, lower_body" x-model="$store.exercises.form.tags_str">
                         </div>
@@ -679,19 +697,19 @@
                                 <option value="TIME">Time (seconds)</option>
                             </select>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Video Instruction URL</label>
                             <input type="url" class="form-control" placeholder="Youtube or direct mp4 link" x-model="$store.exercises.form.video_url">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Image Thumbnail URL</label>
                             <input type="url" class="form-control" placeholder="Image link" x-model="$store.exercises.form.image_url">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Instructions Text</label>
                             <textarea class="form-control" placeholder="Step-by-step guidelines..." x-model="$store.exercises.form.instructions"></textarea>
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
                             <label class="form-label">Pro Tips</label>
                             <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips"></textarea>
                         </div>

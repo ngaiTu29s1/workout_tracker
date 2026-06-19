@@ -153,6 +153,8 @@ document.addEventListener('alpine:init', () => {
           window.dispatchEvent(new CustomEvent('toast', {
             detail: { message: 'Exercise created successfully', type: 'success' }
           }));
+          // Auto-trigger enrichment
+          this.enrichExercise(res.data.id);
         }
         this.extractFilters();
         this.modalOpen = false;
