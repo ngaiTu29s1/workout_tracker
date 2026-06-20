@@ -87,7 +87,12 @@ document.addEventListener('alpine:init', () => {
       const dataTotal = sortedActivity.map(a => a.total);
 
       if (this.activityChart) {
-        this.activityChart.destroy();
+        // Optimistically update chart data instead of destroying it
+        this.activityChart.data.labels = labels;
+        this.activityChart.data.datasets[0].data = dataCompleted;
+        this.activityChart.data.datasets[1].data = dataTotal;
+        this.activityChart.update();
+        return;
       }
 
       this.activityChart = new Chart(ctx, {
@@ -196,7 +201,15 @@ document.addEventListener('alpine:init', () => {
       }
 
       if (this.exerciseChart) {
-        this.exerciseChart.destroy();
+        // Optimistically update chart data and styling instead of destroying it
+        this.exerciseChart.data.labels = labels;
+        this.exerciseChart.data.datasets[0].label = labelText;
+        this.exerciseChart.data.datasets[0].data = data;
+        this.exerciseChart.data.datasets[0].borderColor = strokeColor;
+        this.exerciseChart.data.datasets[0].backgroundColor = fillColor;
+        this.exerciseChart.data.datasets[0].pointBackgroundColor = strokeColor;
+        this.exerciseChart.update();
+        return;
       }
 
       this.exerciseChart = new Chart(ctx, {
