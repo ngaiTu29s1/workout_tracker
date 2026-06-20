@@ -1,5 +1,11 @@
 import { api } from '../api.js';
 
+// Keep Chart.js instances out of Alpine's reactive proxy to prevent infinite recursion
+const chartInstances = {
+  activityChart: null,
+  exerciseChart: null
+};
+
 document.addEventListener('alpine:init', () => {
   Alpine.store('stats', {
     range: '30d',
@@ -17,9 +23,6 @@ document.addEventListener('alpine:init', () => {
     exerciseHistory: [],
     loadingExercise: false,
     
-    // Chart instances (Chart.js)
-    activityChart: null,
-    exerciseChart: null,
     activeMetric: 'volume', // 'volume', 'max_weight', 'total_reps', 'total_time'
 
     async fetchOverview() {
@@ -86,16 +89,16 @@ document.addEventListener('alpine:init', () => {
       const dataCompleted = sortedActivity.map(a => a.completed);
       const dataTotal = sortedActivity.map(a => a.total);
 
-      if (this.activityChart) {
+      if (chartInstances.activityChart) {
         // Optimistically update chart data instead of destroying it
-        this.activityChart.data.labels = labels;
-        this.activityChart.data.datasets[0].data = dataCompleted;
-        this.activityChart.data.datasets[1].data = dataTotal;
-        this.activityChart.update();
+        chartInstances.activityChart.data.labels = labels;
+        chartInstances.activityChart.data.datasets[0].data = dataCompleted;
+        chartInstances.activityChart.data.datasets[1].data = dataTotal;
+        chartInstances.activityChart.update();
         return;
       }
 
-      this.activityChart = new Chart(ctx, {
+      chartInstances.activityChart = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: labels,
@@ -200,19 +203,19 @@ document.addEventListener('alpine:init', () => {
         fillColor = 'rgba(59, 130, 246, 0.05)';
       }
 
-      if (this.exerciseChart) {
+      if (chartInstances.exerciseChart) {
         // Optimistically update chart data and styling instead of destroying it
-        this.exerciseChart.data.labels = labels;
-        this.exerciseChart.data.datasets[0].label = labelText;
-        this.exerciseChart.data.datasets[0].data = data;
-        this.exerciseChart.data.datasets[0].borderColor = strokeColor;
-        this.exerciseChart.data.datasets[0].backgroundColor = fillColor;
-        this.exerciseChart.data.datasets[0].pointBackgroundColor = strokeColor;
-        this.exerciseChart.update();
+        chartInstances.exerciseChart.data.labels = labels;
+        chartInstances.exerciseChart.data.datasets[0].label = labelText;
+        chartInstances.exerciseChart.data.datasets[0].data = data;
+        chartInstances.exerciseChart.data.datasets[0].borderColor = strokeColor;
+        chartInstances.exerciseChart.data.datasets[0].backgroundColor = fillColor;
+        chartInstances.exerciseChart.data.datasets[0].pointBackgroundColor = strokeColor;
+        chartInstances.exerciseChart.update();
         return;
       }
 
-      this.exerciseChart = new Chart(ctx, {
+      chartInstances.exerciseChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
