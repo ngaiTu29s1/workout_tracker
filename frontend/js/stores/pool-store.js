@@ -6,13 +6,17 @@ document.addEventListener('alpine:init', () => {
         searchResults: [],
         searching: false,
         selectedExercise: null,   // pool exercise detail for preview
-        modalOpen: false,
+        open() {
+            this.modalOpen = true;
+            this.searchQuery = '';
+            this.search('');
+        },
         
         async search(query) {
-            if (query.length < 2) { this.searchResults = []; return; }
+            const cleanQuery = (query || '').trim();
             this.searching = true;
             try {
-                const res = await api.get(`/pool/search?q=${encodeURIComponent(query)}&limit=20`);
+                const res = await api.get(`/pool/search?q=${encodeURIComponent(cleanQuery)}&limit=20`);
                 this.searchResults = res.data || [];
             } catch (err) {
                 window.dispatchEvent(new CustomEvent('toast', {
