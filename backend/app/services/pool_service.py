@@ -146,6 +146,11 @@ class PoolService:
         )
 
         self.db.add(personal)
+        
+        # Write-back instructions_vi to pool if pool is linked and has empty instructions_vi
+        if pool_ex and instructions_vi:
+            pool_ex.instructions_vi = pool_ex.instructions_vi or instructions_vi
+            
         await self.db.commit()
 
         # Eager load pool to return

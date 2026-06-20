@@ -3,6 +3,7 @@ import json
 import logging
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from backend.app.models.pool import ExercisePool
 from backend.app.models.exercise import ExerciseMaster
@@ -467,8 +468,8 @@ async def auto_apply_cache(db: AsyncSession) -> None:
 
     logger.info(f"Auto-applying cache for {len(cache)} entries...")
 
-    # Load all existing personal exercises
-    result = await db.execute(select(ExerciseMaster))
+    # Load all existing personal exercises with eagerly loaded pool relationship
+    result = await db.execute(select(ExerciseMaster).options(joinedload(ExerciseMaster.pool)))
     existing_exercises = result.scalars().all()
     existing_by_name = {ex.name_eng.strip().lower(): ex for ex in existing_exercises}
 
@@ -538,6 +539,9 @@ async def auto_apply_cache(db: AsyncSession) -> None:
 
             if updated:
                 logger.info(f"Auto-applied cached fields to existing exercise: {exercise.name_eng}")
+                # Write back instructions_vi to pool if pool is linked and pool.instructions_vi is empty
+                if exercise.pool and exercise.instructions_vi:
+                    exercise.pool.instructions_vi = exercise.pool.instructions_vi or exercise.instructions_vi
                 db.add(exercise)
         else:
             # 2. Re-create missing cached exercise
@@ -590,6 +594,9 @@ async def auto_apply_cache(db: AsyncSession) -> None:
                 tags=cached_data.get("tags") or ["gym"],
                 tracking_type=tracking_type
             )
+            # Write back instructions_vi to pool if pool is linked and pool.instructions_vi is empty
+            if pool_ex and instr_vi:
+                pool_ex.instructions_vi = pool_ex.instructions_vi or instr_vi
             db.add(new_ex)
 
     await db.commit()

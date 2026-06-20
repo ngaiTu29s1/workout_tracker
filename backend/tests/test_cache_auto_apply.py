@@ -84,13 +84,18 @@ async def test_cache_auto_apply_on_seed(db_session: AsyncSession):
     # 2. Run auto_apply_cache
     await auto_apply_cache(db_session)
 
-    # Verify that:
     # A. Existing "Cable Incline Fly" is updated with cached info
     stmt_updated = select(ExerciseMaster).where(ExerciseMaster.name_eng == "Cable Incline Fly")
     fly_updated = (await db_session.execute(stmt_updated)).scalar_one_or_none()
     assert fly_updated.name_vie == "Ép ngực dốc cache"
     assert fly_updated.instructions_vi == "Cách tập ép ngực dốc từ cache."
     assert fly_updated.pro_tips_vi == "Mẹo tập ép ngực dốc từ cache."
+
+    # Verify that pool is enriched with instructions_vi
+    stmt_pool = select(ExercisePool).where(ExercisePool.name == "cable incline fly")
+    pool_fly = (await db_session.execute(stmt_pool)).scalar_one_or_none()
+    assert pool_fly is not None
+    assert pool_fly.instructions_vi == "Cách tập ép ngực dốc từ cache."
 
     # B. Missing "One Arm Swing" is automatically created from cache
     stmt_swing = select(ExerciseMaster).where(ExerciseMaster.name_eng == "One Arm Swing")
@@ -117,3 +122,23 @@ async def test_cache_auto_apply_on_create(db_session: AsyncSession):
     assert new_ex.instructions_vi == "Cách tập vung tạ một tay."
     assert new_ex.pro_tips_vi == "Mẹo vung tạ một tay."
     assert new_ex.primary_muscle == "Full Body"
+
+@pytest.mark.asyncio
+async def test_cache_auto_apply_on_add_from_pool(db_session: AsyncSession):
+    from backend.app.services.pool_service import PoolService
+    # 1. Seed pool
+    await seed_pool(db_session)
+
+    # 2. Get Cable Incline Fly from pool
+    stmt_pool = select(ExercisePool).where(ExercisePool.name == "cable incline fly")
+    pool_fly = (await db_session.execute(stmt_pool)).scalar_one()
+
+    # 3. Add to personal (should auto-apply cached instructions_vi and write back to pool)
+    service = PoolService(db_session)
+    personal_ex = await service.add_to_personal(pool_id=pool_fly.id, tags=["push"])
+
+    assert personal_ex.instructions_vi == "Cách tập ép ngực dốc từ cache."
+    
+    # Reload pool_fly to make sure database has written it back
+    await db_session.refresh(pool_fly)
+    assert pool_fly.instructions_vi == "Cách tập ép ngực dốc từ cache."

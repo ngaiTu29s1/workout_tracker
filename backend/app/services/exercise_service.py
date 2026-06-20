@@ -181,6 +181,10 @@ class ExerciseService:
         for key, value in update_data.items():
             setattr(exercise, key, value)
 
+        # Write-back instructions_vi to linked pool if available
+        if exercise.pool and exercise.instructions_vi:
+            exercise.pool.instructions_vi = exercise.pool.instructions_vi or exercise.instructions_vi
+
         await self.db.commit()
         await self.db.refresh(exercise)
         return exercise
