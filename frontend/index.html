@@ -733,6 +733,7 @@
                                 <label class="form-label" style="margin-bottom: 0;">Instructions Text</label>
                                 <button type="button" class="btn btn-secondary" 
                                         style="min-height: auto; height: 32px; padding: 0 var(--space-sm); font-size: var(--font-xs);"
+                                        x-show="!$store.exercises.editingExercise?.pool_id"
                                         @click="$store.exercises.enrichExercise($store.exercises.editingExercise?.id)"
                                         :disabled="$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">
                                     <span x-show="!$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">🪄 AI Enrich</span>
