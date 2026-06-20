@@ -14,7 +14,7 @@ is_testing = os.getenv("TESTING") == "True"
 # Create async engine and session factory
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True,  # Set to True to log SQL statements for easy debugging during local setup
+    echo=False,  # Set to True to log SQL statements for easy debugging during local setup
     future=True,
     poolclass=NullPool if is_testing else None
 )

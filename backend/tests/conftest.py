@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from backend.app.main import app
 from backend.app.database import get_db, async_session_maker, engine, Base
+from backend.app.config import settings
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
@@ -19,10 +20,10 @@ def setup_test_db():
     loop = asyncio.new_event_loop()
     
     async def _create_db():
-        user = os.getenv("POSTGRES_USER", "fitness")
-        password = os.getenv("POSTGRES_PASSWORD", "change_me_please")
-        host = os.getenv("POSTGRES_HOST", "db")
-        port = os.getenv("POSTGRES_PORT", "5432")
+        user = settings.POSTGRES_USER
+        password = settings.POSTGRES_PASSWORD
+        host = settings.POSTGRES_HOST
+        port = settings.POSTGRES_PORT
         admin_url = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/postgres"
         
         # Use autocommit connection to allow CREATE DATABASE command
