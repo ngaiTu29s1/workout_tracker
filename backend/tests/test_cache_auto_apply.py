@@ -13,8 +13,8 @@ from backend.app.schemas.exercise import ExerciseCreate
 
 CACHE_PATH = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
 
-@pytest.fixture(autouse=True)
-async def setup_test_cache():
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_cache():
     # Back up existing cache file if any
     backup_path = CACHE_PATH + ".bak"
     has_backup = False
