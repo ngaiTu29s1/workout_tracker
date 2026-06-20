@@ -566,6 +566,11 @@
   width: 100%;
 }
 
+/* Hide the existing day routine badge when another badge is dragged into the dropzone (not only-child) */
+.day-routine-dropzone > .calendar-day-box__routine:not(:only-child) {
+  display: none !important;
+}
+
 
 /* Exercise grid layout for catalog */
 .exercise-grid {

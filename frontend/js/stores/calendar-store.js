@@ -140,6 +140,18 @@ document.addEventListener('alpine:init', () => {
 
     async setOverride(dateStr, routineTag, skipRefresh = false) {
       try {
+        if (!skipRefresh) {
+          // Optimistic UI update for single-day drops
+          this.days = this.days.map(d => {
+            if (d.date === dateStr) {
+              const targetTag = routineTag || d.preset_tag;
+              return { ...d, routine_tag: targetTag, is_override: routineTag !== null };
+            }
+            return d;
+          });
+          this.refreshCounter++;
+        }
+
         await api.post('/calendar/override', {
           workout_date: dateStr,
           routine_tag: routineTag || null // null reverts to preset
@@ -168,6 +180,18 @@ document.addEventListener('alpine:init', () => {
 
     async moveOverride(sourceDate, targetDate, routineTag) {
       try {
+        // Optimistic UI update for both source and target days
+        this.days = this.days.map(d => {
+          if (d.date === sourceDate) {
+            return { ...d, routine_tag: d.preset_tag, is_override: false };
+          }
+          if (d.date === targetDate) {
+            return { ...d, routine_tag: routineTag, is_override: true };
+          }
+          return d;
+        });
+        this.refreshCounter++;
+
         // Remove override from source date (skip refresh)
         await this.setOverride(sourceDate, null, true);
         // Set override on target date (do refresh)
