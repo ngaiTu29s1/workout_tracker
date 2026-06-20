@@ -236,35 +236,17 @@
                                 if (el.sortable) el.sortable.destroy();
                                 
                                 el.sortable = new Sortable(el, {
-                                    group: 'routines',
+                                    group: { name: 'routines', pull: 'clone' },
                                     animation: 150,
                                     onAdd: async (evt) => {
                                         const targetDate = el.getAttribute('data-date');
                                         const tag = evt.item.getAttribute('data-tag');
                                         
-                                        // Check if dragged from another day's dropzone
-                                        const fromEl = evt.from;
-                                        const isFromDayZone = fromEl.classList.contains('day-routine-dropzone');
-                                        
-                                        if (isFromDayZone) {
-                                            const sourceDate = fromEl.getAttribute('data-date');
-                                            await $store.calendar.moveOverride(sourceDate, targetDate, tag);
-                                        } else {
-                                            await $store.calendar.setOverride(targetDate, tag);
-                                        }
+                                        await $store.calendar.setOverride(targetDate, tag);
                                         
                                         if (evt.item.parentNode) {
                                             evt.item.parentNode.removeChild(evt.item);
                                         }
-                                    },
-                                    onRemove: async (evt) => {
-                                        // If dragged to another day's dropzone, the target's onAdd will handle it sequentially
-                                        const toEl = evt.to;
-                                        const isToDayZone = toEl && toEl.classList.contains('day-routine-dropzone');
-                                        if (isToDayZone) return;
-                                        
-                                        const sourceDate = el.getAttribute('data-date');
-                                        await $store.calendar.setOverride(sourceDate, null);
                                     }
                                 });
                             });
