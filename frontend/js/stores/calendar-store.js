@@ -136,29 +136,42 @@ document.addEventListener('alpine:init', () => {
       this.fetchCalendar();
     },
 
-    async setOverride(dateStr, routineTag) {
+    async setOverride(dateStr, routineTag, skipRefresh = false) {
       try {
         await api.post('/calendar/override', {
           workout_date: dateStr,
           routine_tag: routineTag || null // null reverts to preset
         });
         
-        // Refresh calendar list
-        await this.fetchCalendar();
-        
-        // If this date is today or currently loaded session date, refresh workout session
-        const workoutStore = Alpine.store('workout');
-        if (workoutStore.selectedDate === dateStr) {
-          await workoutStore.fetchSession();
-        }
+        if (!skipRefresh) {
+          // Refresh calendar list
+          await this.fetchCalendar();
+          
+          // If this date is today or currently loaded session date, refresh workout session
+          const workoutStore = Alpine.store('workout');
+          if (workoutStore.selectedDate === dateStr) {
+            await workoutStore.fetchSession();
+          }
 
-        window.dispatchEvent(new CustomEvent('toast', {
-          detail: { message: 'Routine updated successfully', type: 'success' }
-        }));
+          window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message: 'Routine updated successfully', type: 'success' }
+          }));
+        }
       } catch (err) {
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: err.message || 'Failed to override routine', type: 'error' }
         }));
+      }
+    },
+
+    async moveOverride(sourceDate, targetDate, routineTag) {
+      try {
+        // Remove override from source date (skip refresh)
+        await this.setOverride(sourceDate, null, true);
+        // Set override on target date (do refresh)
+        await this.setOverride(targetDate, routineTag, false);
+      } catch (err) {
+        console.error('Failed to move override', err);
       }
     },
 
