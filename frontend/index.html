@@ -13,6 +13,16 @@
     <link rel="stylesheet" href="css/animations.css">
     <link rel="stylesheet" href="css/views.css">
 
+    <!-- Polyfill to prevent closest() crashes in third-party libraries (e.g. Chart.js when event target is Document/Window) -->
+    <script>
+        if (typeof Document !== 'undefined' && !Document.prototype.closest) {
+            Document.prototype.closest = function() { return null; };
+        }
+        if (typeof Window !== 'undefined' && !Window.prototype.closest) {
+            Window.prototype.closest = function() { return null; };
+        }
+    </script>
+
     <!-- CDN Libraries & Core Modules -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
