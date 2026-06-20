@@ -435,48 +435,73 @@
                                 <!-- Accordion Body (Only visible when expanded) -->
                                 <div class="exercise-log-box__body" x-show="$store.workout.activeExerciseId === item.exercise.id" x-collapse>
                                     
-                                    <!-- Video/GIF Tutorial Section -->
-                                    <template x-if="item.exercise.video_url || item.exercise.pool_gif">
+                                    <!-- Exercise Metadata Badges -->
+                                    <div class="flex align-center gap-xs mb-sm flex-wrap">
+                                        <template x-if="item.exercise.primary_muscle">
+                                            <span class="badge badge-accent" style="font-size: 10px; text-transform: uppercase;" x-text="'Muscle: ' + item.exercise.primary_muscle"></span>
+                                        </template>
+                                        <template x-for="tag in item.exercise.tags || []">
+                                            <span class="badge" style="font-size: 10px; opacity: 0.8;" x-text="tag.toUpperCase().replace('_', ' ')"></span>
+                                        </template>
+                                    </div>
+
+                                    <!-- Video/GIF Tutorial & Static Image Section -->
+                                    <div class="exercise-media-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-sm); margin-bottom: var(--space-md);">
+                                        <!-- Static Image (if available) -->
+                                        <template x-if="item.exercise.pool_image || item.exercise.image_url">
+                                            <div class="media-box" style="position: relative; aspect-ratio: 1.3; background: var(--bg-glass); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center;">
+                                                <img :src="item.exercise.pool_image ? (item.exercise.pool_image.startsWith('/pool/') ? item.exercise.pool_image : '/pool/' + item.exercise.pool_image) : item.exercise.image_url" 
+                                                     alt="Start Position" 
+                                                     style="width: 100%; height: 100%; object-fit: contain;">
+                                                <span style="position: absolute; bottom: 4px; left: 6px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: var(--radius-xs); color: #fff; font-weight: 500; text-transform: uppercase;">Image</span>
+                                            </div>
+                                        </template>
+
+                                        <!-- Animated GIF (if available) -->
+                                        <template x-if="item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/')))">
+                                            <div class="media-box" style="position: relative; aspect-ratio: 1.3; background: var(--bg-glass); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center;">
+                                                <img :src="item.exercise.pool_gif ? (item.exercise.pool_gif.startsWith('/pool/') ? item.exercise.pool_gif : '/pool/' + item.exercise.pool_gif) : item.exercise.video_url" 
+                                                     alt="Demonstration" 
+                                                     style="width: 100%; height: 100%; object-fit: contain;">
+                                                <span style="position: absolute; bottom: 4px; left: 6px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: var(--radius-xs); color: #fff; font-weight: 500; text-transform: uppercase;">GIF Demo</span>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Standard Video Player (Embed/Direct/Link) -->
+                                    <template x-if="item.exercise.video_url && !(item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/'))">
                                         <div class="mb-md">
-                                            <!-- Inline GIF demonstration if available -->
-                                            <template x-if="item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/')))">
-                                                <div style="text-align: center;">
-                                                    <img :src="item.exercise.pool_gif ? '/pool/' + item.exercise.pool_gif : item.exercise.video_url" 
-                                                         class="exercise-gif"
-                                                         alt="Exercise demonstration"
-                                                         loading="lazy"
-                                                         style="max-width: 100%; border-radius: var(--radius-md); object-fit: contain; margin-bottom: 0;">
+                                            <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
+                                                <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                                    <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                                                 </div>
                                             </template>
-                                            
-                                            <!-- Standard Video Player (Embed/Direct/Link) -->
-                                            <template x-if="!(item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/'))))">
+                                            <template x-if="isDirectVideo(item.exercise.video_url)">
+                                                <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                                    <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
+                                                </div>
+                                            </template>
+                                            <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
                                                 <div>
-                                                    <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
-                                                        <div class="video-container">
-                                                            <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="isDirectVideo(item.exercise.video_url)">
-                                                        <div class="video-container">
-                                                            <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
-                                                        </div>
-                                                    </template>
-                                                    <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
-                                                        <div>
-                                                            <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
-                                                        </div>
-                                                    </template>
+                                                    <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
                                                 </div>
                                             </template>
                                         </div>
                                     </template>
 
+                                    <!-- Instructions and Pro Tips -->
                                     <div class="mb-md" x-show="(lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)) || (lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips))">
-                                        <p class="text-secondary" style="font-size: var(--font-sm);" x-text="lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)"></p>
-                                        <div x-show="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)" class="mt-sm" style="border-left: 2px solid var(--accent-primary); padding-left: var(--space-sm); font-size: var(--font-xs); color: var(--accent-primary);">
-                                            <strong>Pro Tip:</strong> <span x-text="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)"></span>
+                                        <div class="mb-sm">
+                                            <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" x-text="lang === 'vi' ? 'Hướng dẫn thực hiện' : 'Instructions'"></div>
+                                            <p class="text-secondary" style="font-size: var(--font-sm); line-height: 1.5; margin: 0;" x-text="lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)"></p>
                                         </div>
+                                        
+                                        <template x-if="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)">
+                                            <div class="mt-md" style="background: rgba(0, 212, 170, 0.06); border-left: 3px solid var(--accent-primary); padding: var(--space-xs) var(--space-sm); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: var(--font-xs); line-height: 1.4;">
+                                                <strong style="color: var(--accent-primary); display: block; margin-bottom: 2px;">💡 Pro Tip</strong>
+                                                <span class="text-secondary" x-text="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)"></span>
+                                            </div>
+                                        </template>
                                     </div>
 
                                     <!-- Set Table -->
