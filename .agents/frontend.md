@@ -2,7 +2,7 @@
 
 > **Role**: Frontend Developer & UI Designer
 > **Scope**: `frontend/` directory only
-> **Trước khi bắt đầu**: Đọc `AGENTS.md` ở root → rồi đọc file này.
+> **Trước khi bắt đầu**: Đọc `docs/AGENTS.md` → rồi đọc file này.
 
 ---
 
@@ -16,7 +16,7 @@
 - Nắm rõ: Backend đang serve ở port nào? Seed data có gì?
 
 ### Khi kết thúc
-- Viết `.handoffs/frontend-done.md` với format trong `AGENTS.md`
+- Viết `.handoffs/frontend-done.md` với format trong `docs/AGENTS.md`
 - **BẮT BUỘC** liệt kê:
   - Views nào đã implement (Catalog, Calendar, Session, Stats)
   - Components nào đã tạo

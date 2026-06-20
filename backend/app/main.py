@@ -63,6 +63,12 @@ app.include_router(stats)
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
 os.makedirs(frontend_dir, exist_ok=True)
 
+# Mount exercise pool static directory if configured
+pool_data_path = os.getenv("POOL_DATA_PATH")
+if pool_data_path:
+    os.makedirs(pool_data_path, exist_ok=True)
+    app.mount("/pool", StaticFiles(directory=pool_data_path), name="pool")
+
 # Mount frontend static directory
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 

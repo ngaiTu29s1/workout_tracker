@@ -2,7 +2,7 @@
 
 > **Role**: DevOps / Infrastructure
 > **Scope**: Root config files + Docker setup
-> **Trước khi bắt đầu**: Đọc `AGENTS.md` ở root → rồi đọc file này.
+> **Trước khi bắt đầu**: Đọc `docs/AGENTS.md` → rồi đọc file này.
 
 ---
 
@@ -12,7 +12,7 @@
 - Đọc `.handoffs/` nếu có files — để biết context trước đó
 
 ### Khi kết thúc
-- Viết `.handoffs/infra-done.md` với format trong `AGENTS.md`
+- Viết `.handoffs/infra-done.md` với format trong `docs/AGENTS.md`
 - **BẮT BUỘC** liệt kê:
   - Docker services nào đang chạy (ports, healthchecks)
   - Database connection info (user, db name, tables created)

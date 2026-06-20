@@ -78,7 +78,7 @@ class ExerciseService:
         """
         Create a new exercise in exercise_master.
         """
-        # Ensure values conform to instruct.md mapping types
+        # Ensure values conform to docs/instruct.md mapping types
         db_exercise = ExerciseMaster(
             name_eng=title_case_name(schema.name_eng),
             name_vie=schema.name_vie,

@@ -38,9 +38,9 @@
 
 ```
 workout_checker/
-├── AGENTS.md                    # ← BẠN ĐANG ĐỌC FILE NÀY
-├── PLAN.md                      # Implementation plan chi tiết
-├── instruct.md                  # Đặc tả gốc từ product owner
+├── docs/AGENTS.md               # ← BẠN ĐANG ĐỌC FILE NÀY
+├── docs/PLAN.md                 # Implementation plan chi tiết
+├── docs/instruct.md             # Đặc tả gốc từ product owner
 ├── docker-compose.yml
 ├── .env.example
 ├── .env                         # ⛔ KHÔNG commit
@@ -130,7 +130,7 @@ workout_checker/
 /api/...
 ```
 
-### Endpoints (đầy đủ trong PLAN.md)
+### Endpoints (đầy đủ trong docs/PLAN.md)
 - `/api/exercises` — CRUD + AI enrich
 - `/api/presets` — Weekly schedule
 - `/api/workouts` — Daily workout logs
@@ -159,7 +159,7 @@ workout_checker/
 ## 🗄️ Database Conventions
 
 - **4 tables**: `exercise_master`, `weekly_presets`, `daily_workout_log`, `workout_aggregated_stats`
-- Schema chi tiết → xem `instruct.md` Section 2
+- Schema chi tiết → xem `docs/instruct.md` Section 2
 - **JSONB** cho `tracking_data`, `secondary_muscle`, `tags`
 - **CASCADE delete** trên foreign keys
 - **UPSERT** cho stats aggregation (unique constraint trên `date + exercise_id + metric_type`)
@@ -268,10 +268,10 @@ Frontend Worker → .handoffs/frontend-done.md → Control Plane reviews
 
 ## 🚦 Worker Workflow
 
-1. **Đọc `AGENTS.md`** (file này) để hiểu project context
+1. **Đọc `docs/AGENTS.md`** (file này) để hiểu project context
 2. **Đọc `.handoffs/`** để biết workers trước đã làm gì
 3. **Đọc worker prompt** trong `.agents/<role>.md` để hiểu scope cụ thể
-4. **Đọc `PLAN.md`** để hiểu implementation plan
+4. **Đọc `docs/PLAN.md`** để hiểu implementation plan
 5. **Kiểm tra code hiện tại** trước khi viết — tránh duplicate/conflict
 6. **Chỉ làm trong scope** — nếu cần thay đổi ngoài scope, báo lại control plane
 7. **Test trước khi báo done** — chạy được, không lỗi syntax/import
@@ -283,8 +283,8 @@ Frontend Worker → .handoffs/frontend-done.md → Control Plane reviews
 
 | File | Mô tả |
 |---|---|
-| `instruct.md` | Đặc tả product gốc (DB schema, UI views, flows) |
-| `PLAN.md` | Implementation plan đã approved |
-| `AGENTS.md` | File này — shared agent context |
+| `docs/instruct.md` | Đặc tả product gốc (DB schema, UI views, flows) |
+| `docs/PLAN.md` | Implementation plan đã approved |
+| `docs/AGENTS.md` | File này — shared agent context |
 | `.agents/*.md` | Worker-specific prompts |
 | `.handoffs/*.md` | Handoff documents giữa các workers |

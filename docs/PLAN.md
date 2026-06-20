@@ -43,7 +43,7 @@ workout_checker/
 ├── .env.example
 ├── .env
 ├── .gitignore
-├── instruct.md
+├── docs/instruct.md
 ├── README.md
 │
 ├── backend/
@@ -170,7 +170,7 @@ APP_PORT=8000
 ### Component 2: Database & Models
 
 #### [NEW] backend/app/models/*.py
-- SQLAlchemy 2.0 async models mapping 5 bảng (4 bảng gốc trong instruct.md + 1 bảng `daily_overrides` để lưu lịch tập ghi đè từng ngày mà không làm thay đổi preset hàng tuần)
+- SQLAlchemy 2.0 async models mapping 5 bảng (4 bảng gốc trong docs/instruct.md + 1 bảng `daily_overrides` để lưu lịch tập ghi đè từng ngày mà không làm thay đổi preset hàng tuần)
 - Relationships giữa các bảng
 - Index trên `workout_date`, `exercise_id`
 

@@ -31,3 +31,6 @@ Thumbs.db
 
 # Agent handoffs (ephemeral inter-agent comms)
 .handoffs/
+
+# Dataset
+data/

@@ -2,7 +2,7 @@
 
 > **Role**: Backend Developer
 > **Scope**: `backend/` directory only
-> **Trước khi bắt đầu**: Đọc `AGENTS.md` ở root → rồi đọc file này.
+> **Trước khi bắt đầu**: Đọc `docs/AGENTS.md` → rồi đọc file này.
 
 ---
 
@@ -13,7 +13,7 @@
 - Nắm rõ: Docker running? DB tables created? Which files exist?
 
 ### Khi kết thúc
-- Viết `.handoffs/backend-done.md` với format trong `AGENTS.md`
+- Viết `.handoffs/backend-done.md` với format trong `docs/AGENTS.md`
 - **BẮT BUỘC** liệt kê:
   - Tất cả API endpoints đã implement (method + path + example response)
   - Seed data: bao nhiêu exercises, preset schedule
@@ -96,7 +96,7 @@ class ExerciseMaster(Base):
     __tablename__ = "exercise_master"
     id = Column(Integer, primary_key=True, autoincrement=True)
     name_eng = Column(String(255), nullable=False, unique=True)
-    # ... rest follows instruct.md schema exactly
+    # ... rest follows docs/instruct.md schema exactly
 ```
 
 ### Router Pattern
@@ -137,7 +137,7 @@ async def list_exercises(
 - **KHÔNG** sửa files trong `frontend/` — đó là scope của frontend worker
 - **KHÔNG** sửa `docker-compose.yml` — đó là scope của infra worker
 - **KHÔNG** thêm dependencies mới mà không note lại
-- **KHÔNG** thay đổi API response format (đã define trong AGENTS.md)
+- **KHÔNG** thay đổi API response format (đã define trong docs/AGENTS.md)
 - Nếu cần thay đổi schema DB → báo control plane trước
 
 ---
