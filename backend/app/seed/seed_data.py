@@ -430,20 +430,26 @@ async def seed_db(db: AsyncSession) -> None:
     """
     Seed the database with default exercises and weekly presets if they don't exist.
     """
-    # 1. Seed Exercises
+    # 1. Seed Exercises — seed if fewer than expected (handles partial data from testing)
     exercise_count_query = select(func.count(ExerciseMaster.id))
     result = await db.execute(exercise_count_query)
     count = result.scalar()
 
-    if count == 0:
-        logger.info("Database is empty. Seeding exercises...")
+    if count < len(EXERCISES_SEED):
+        if count > 0:
+            logger.info(f"Found {count} exercises (expected {len(EXERCISES_SEED)}). Re-seeding...")
+            # Delete existing to avoid duplicates, then reseed
+            await db.execute(ExerciseMaster.__table__.delete())
+            await db.flush()
+        else:
+            logger.info("Database is empty. Seeding exercises...")
         for ex in EXERCISES_SEED:
             db_ex = ExerciseMaster(**ex)
             db.add(db_ex)
         await db.commit()
         logger.info(f"Successfully seeded {len(EXERCISES_SEED)} exercises.")
     else:
-        logger.info("Exercises already exist. Skipping exercise seeding.")
+        logger.info(f"Exercises already seeded ({count}). Skipping.")
 
     # 2. Seed Weekly Presets
     preset_count_query = select(func.count(WeeklyPreset.day_of_week))
