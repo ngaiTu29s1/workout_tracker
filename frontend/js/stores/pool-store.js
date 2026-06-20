@@ -6,6 +6,7 @@ document.addEventListener('alpine:init', () => {
         searchResults: [],
         searching: false,
         selectedExercise: null,   // pool exercise detail for preview
+        modalOpen: false,
         open() {
             this.modalOpen = true;
             this.searchQuery = '';
