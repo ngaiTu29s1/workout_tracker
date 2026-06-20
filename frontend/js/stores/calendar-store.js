@@ -16,6 +16,7 @@ document.addEventListener('alpine:init', () => {
     viewType: 'week', // 'week' or 'month'
     currentDate: new Date(),
     presets: {}, // day_of_week -> routine_tag
+    refreshCounter: 0, // Used as part of template keys to force DOM clean rebuilds on refreshes
     formatDateLocal(date) {
       return formatDateLocal(date);
     },
@@ -100,6 +101,7 @@ document.addEventListener('alpine:init', () => {
 
         const res = await api.get(`/calendar?start=${start}&end=${end}`);
         this.days = res.data || [];
+        this.refreshCounter++;
       } catch (err) {
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: err.message || 'Failed to fetch calendar', type: 'error' }

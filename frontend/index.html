@@ -271,7 +271,7 @@
                         });
                     })
                 ">
-                    <template x-for="day in $store.calendar.days" :key="day.date">
+                    <template x-for="day in $store.calendar.days" :key="day.date + '-' + $store.calendar.refreshCounter">
                         <div class="calendar-day-box cursor-pointer"
                              :class="day.date === window.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''"
                              x-data="{ popoverOpen: false }"
@@ -288,10 +288,11 @@
                             <div class="day-routine-dropzone-container" @click.stop="">
                                 <div class="day-routine-dropzone" :data-date="day.date" style="min-height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.01); border-radius: var(--radius-sm); border: 1px dashed rgba(255,255,255,0.05); margin-bottom: var(--space-xs);">
                                     <span class="badge cursor-pointer calendar-day-box__routine" 
+                                          x-show="day.routine_tag"
                                           :class="getRoutineTagClass(day.routine_tag)"
                                           :data-tag="day.routine_tag"
                                           @click="popoverOpen = !popoverOpen"
-                                          x-text="day.routine_tag.toUpperCase().replace('_', ' ')"></span>
+                                          x-text="(day.routine_tag || '').toUpperCase().replace('_', ' ')"></span>
                                 </div>
 
                                 <!-- Popover change tag menu -->
@@ -334,7 +335,7 @@
                         <div class="month-grid-header__day">Sun</div>
                     </div>
                     <div class="month-grid">
-                        <template x-for="day in $store.calendar.days" :key="day.date">
+                        <template x-for="day in $store.calendar.days" :key="day.date + '-' + $store.calendar.refreshCounter">
                             <div class="calendar-month-day"
                                  :class="[
                                     day.date === window.formatDateLocal(new Date()) ? 'calendar-month-day--today' : '',
@@ -347,8 +348,9 @@
                                 <span class="calendar-month-day__number" x-text="new Date(day.date).getDate()"></span>
                                 
                                 <span class="badge" style="font-size: 8px; padding: 2px 4px; align-self: flex-start;"
+                                      x-show="day.routine_tag"
                                       :class="getRoutineTagClass(day.routine_tag)"
-                                      x-text="day.routine_tag.toUpperCase().replace('_', ' ')"></span>
+                                      x-text="(day.routine_tag || '').toUpperCase().replace('_', ' ')"></span>
                             </div>
                         </template>
                     </div>
