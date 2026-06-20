@@ -10,6 +10,12 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('app', () => ({
     activeView: 'session',
     toasts: [],
+    lang: 'vi',
+    
+    toggleLang() {
+      this.lang = this.lang === 'vi' ? 'en' : 'vi';
+      this.addToast(`Switched language to ${this.lang.toUpperCase()}`, 'success');
+    },
     
     getRoutineTagClass(tag) {
       const t = (tag || '').toLowerCase().replace(' ', '_');

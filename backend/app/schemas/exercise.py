@@ -6,9 +6,13 @@ class ExerciseBase(BaseModel):
     name_eng: str
     name_vie: Optional[str] = None
     instructions: Optional[str] = None
+    instructions_en: Optional[str] = None
+    instructions_vi: Optional[str] = None
     video_url: Optional[str] = None
     image_url: Optional[str] = None
     pro_tips: Optional[str] = None
+    pro_tips_en: Optional[str] = None
+    pro_tips_vi: Optional[str] = None
     tracking_type: str  # WEIGHT_REPS, BODYWEIGHT_REPS, TIME
     primary_muscle: Optional[str] = None
     secondary_muscle: List[str] = []
@@ -21,9 +25,13 @@ class ExerciseUpdate(BaseModel):
     name_eng: Optional[str] = None
     name_vie: Optional[str] = None
     instructions: Optional[str] = None
+    instructions_en: Optional[str] = None
+    instructions_vi: Optional[str] = None
     video_url: Optional[str] = None
     image_url: Optional[str] = None
     pro_tips: Optional[str] = None
+    pro_tips_en: Optional[str] = None
+    pro_tips_vi: Optional[str] = None
     tracking_type: Optional[str] = None
     primary_muscle: Optional[str] = None
     secondary_muscle: Optional[List[str]] = None

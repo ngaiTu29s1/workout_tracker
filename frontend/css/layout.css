@@ -203,4 +203,13 @@
     left: auto;
     transform: none;
   }
+
+  .lang-toggle-sidebar {
+    display: flex !important;
+  }
 }
+
+.lang-toggle-sidebar {
+  display: none;
+}
+

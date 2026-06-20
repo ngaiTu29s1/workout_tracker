@@ -58,6 +58,12 @@
                 </svg>
                 <span>Stats</span>
             </a>
+
+            <!-- Desktop Language Toggle -->
+            <div class="nav-item lang-toggle-sidebar" style="margin-top: auto; cursor: pointer; display: flex; align-items: center; gap: var(--space-md);" @click="toggleLang()">
+                <span style="font-size: 20px;" x-text="lang === 'vi' ? '🇻🇳' : '🇬🇧'"></span>
+                <span x-text="lang === 'vi' ? 'Tiếng Việt' : 'English'"></span>
+            </div>
         </nav>
 
         <!-- Main Content Area -->
@@ -66,7 +72,13 @@
             <!-- Mobile Header -->
             <header class="app-header">
                 <div class="app-logo">🏋️ Fitness OS</div>
-                <h2 x-text="activeView.charAt(0).toUpperCase() + activeView.slice(1)" style="font-size: var(--font-base); text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em;"></h2>
+                <div class="flex align-center gap-sm">
+                    <!-- Language Toggle Button Mobile -->
+                    <button @click="toggleLang()" class="btn btn-secondary" style="min-height: auto; height: 32px; padding: 0 var(--space-sm); font-size: var(--font-xs); border: 1px solid var(--border-glass);">
+                        <span x-text="lang === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'"></span>
+                    </button>
+                    <h2 x-text="activeView.charAt(0).toUpperCase() + activeView.slice(1)" style="font-size: var(--font-base); text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em; margin: 0;"></h2>
+                </div>
             </header>
 
             <!-- ==========================================================================
@@ -76,7 +88,10 @@
                 <div class="catalog-header">
                     <div class="flex justify-between align-center">
                         <h1>Exercise Catalog</h1>
-                        <div class="flex gap-sm">
+                        <div class="flex gap-sm flex-wrap">
+                            <button class="btn btn-secondary" style="min-height: 40px; padding: 0 var(--space-md); display: flex; align-items: center; gap: 4px;" @click="$store.exercises.enrichAll()" :disabled="$store.exercises.loading">
+                                <span>🪄 AI Auto-fill & Enrich</span>
+                            </button>
                             <button class="btn btn-secondary" style="min-height: 40px; padding: 0 var(--space-md);" @click="$store.exercises.openCreateModal()">
                                 <span>Create Manual</span>
                             </button>
@@ -97,7 +112,7 @@
                     <div class="filter-row">
                         <span class="chip" :class="!$store.exercises.selectedTag ? 'chip--active' : ''" @click="$store.exercises.selectedTag = ''; $store.exercises.selectedMuscle = '';">All</span>
                         
-                        <template x-for="tag in $store.exercises.routineTags" :key="tag.value">
+                        <template x-for="tag in $store.exercises.activeTags" :key="tag.value">
                             <span class="chip" 
                                   :class="$store.exercises.selectedTag === tag.value ? 'chip--active chip--' + tag.value.replace('_', '-') : ''" 
                                   @click="$store.exercises.selectedTag = ($store.exercises.selectedTag === tag.value ? '' : tag.value)" 
@@ -119,7 +134,17 @@
 
                 <div class="exercise-grid" x-show="!$store.exercises.loading">
                     <template x-for="ex in $store.exercises.filteredItems" :key="ex.id">
-                        <div class="exercise-card" @click="$store.exercises.openEditModal(ex)" x-data="{ imgFailed: false }">
+                        <div class="exercise-card" 
+                             @click="$store.exercises.openEditModal(ex)" 
+                             x-data="{ imgFailed: false }"
+                             :class="$store.exercises.enrichingIds.includes(ex.id) ? 'exercise-card--enriching' : ''">
+                            
+                            <!-- Loading overlay for enrichment -->
+                            <div x-show="$store.exercises.enrichingIds.includes(ex.id)" class="exercise-card__enrich-overlay">
+                                <div class="spinner-small"></div>
+                                <span class="exercise-card__enrich-text" x-text="lang === 'vi' ? 'Đang dịch...' : 'Translating...'"></span>
+                            </div>
+
                             <div class="exercise-card__image">
                                 <img x-show="!imgFailed && $store.pool.getImageUrl(ex)" 
                                      :src="$store.pool.getImageUrl(ex)" 
@@ -133,8 +158,8 @@
                             
                             <div class="exercise-card__info">
                                 <div class="exercise-card__muscle" x-text="ex.primary_muscle || 'General'"></div>
-                                <h4 class="exercise-card__name" x-text="ex.name_eng"></h4>
-                                <div class="exercise-card__vietnamese" x-text="ex.name_vie || 'No Vietnamese Name'"></div>
+                                <h4 class="exercise-card__name" x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng"></h4>
+                                <div class="exercise-card__vietnamese" x-text="lang === 'vi' ? ex.name_eng : (ex.name_vie || '')"></div>
                                 
                                 <div class="exercise-card__tags">
                                     <template x-for="tag in (ex.tags || []).slice(0, 3)">
@@ -395,8 +420,8 @@
                                             <span x-show="!item.is_completed">○</span>
                                         </button>
                                         <div>
-                                            <h3 x-text="item.exercise.name_eng" style="font-weight: 700;"></h3>
-                                            <span class="text-secondary" style="font-size: var(--font-xs);" x-text="item.exercise.name_vie || 'No Vietnamese name'"></span>
+                                            <h3 x-text="lang === 'vi' ? (item.exercise.name_vie || item.exercise.name_eng) : item.exercise.name_eng" style="font-weight: 700;"></h3>
+                                            <span class="text-secondary" style="font-size: var(--font-xs);" x-text="lang === 'vi' ? item.exercise.name_eng : (item.exercise.name_vie || '')"></span>
                                         </div>
                                     </div>
                                     <div class="flex align-center gap-sm">
@@ -447,11 +472,10 @@
                                         </div>
                                     </template>
 
-                                    <!-- Instructions & Pro Tips -->
-                                    <div class="mb-md" x-show="item.exercise.instructions || item.exercise.pro_tips">
-                                        <p class="text-secondary" style="font-size: var(--font-sm);" x-text="item.exercise.instructions"></p>
-                                        <div x-show="item.exercise.pro_tips" class="mt-sm" style="border-left: 2px solid var(--accent-primary); padding-left: var(--space-sm); font-size: var(--font-xs); color: var(--accent-primary);">
-                                            <strong>Pro Tip:</strong> <span x-text="item.exercise.pro_tips"></span>
+                                    <div class="mb-md" x-show="(lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)) || (lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips))">
+                                        <p class="text-secondary" style="font-size: var(--font-sm);" x-text="lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)"></p>
+                                        <div x-show="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)" class="mt-sm" style="border-left: 2px solid var(--accent-primary); padding-left: var(--space-sm); font-size: var(--font-xs); color: var(--accent-primary);">
+                                            <strong>Pro Tip:</strong> <span x-text="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)"></span>
                                         </div>
                                     </div>
 
@@ -547,7 +571,7 @@
                                              onmouseover="this.style.background='rgba(255,255,255,0.03)'"
                                              onmouseout="this.style.background='none'">
                                             <div>
-                                                <div x-text="ex.name_eng" style="font-weight: 600;"></div>
+                                                <div x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng" style="font-weight: 600;"></div>
                                                 <span class="text-secondary" style="font-size: var(--font-xs);" x-text="ex.primary_muscle"></span>
                                             </div>
                                             <span class="badge badge-accent">+ Add</span>
@@ -642,7 +666,7 @@
                                     :value="$store.stats.selectedExerciseId"
                                     @change="$store.stats.fetchExerciseStats($event.target.value)">
                                 <template x-for="ex in $store.exercises.items" :key="ex.id">
-                                    <option :value="ex.id" x-text="ex.name_eng"></option>
+                                    <option :value="ex.id" x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng"></option>
                                 </template>
                             </select>
 
@@ -696,7 +720,7 @@
                             <label class="form-label">English Name *</label>
                             <input type="text" class="form-control" required placeholder="e.g., Squat" x-model="$store.exercises.form.name_eng">
                         </div>
-                        <div class="form-group" x-show="$store.exercises.editingExercise">
+                        <div class="form-group">
                             <label class="form-label">Vietnamese Name</label>
                             <input type="text" class="form-control" placeholder="e.g., Gánh đùi" x-model="$store.exercises.form.name_vie">
                         </div>
@@ -728,9 +752,11 @@
                             <label class="form-label">Image Thumbnail URL</label>
                             <input type="url" class="form-control" placeholder="Image link" x-model="$store.exercises.form.image_url">
                         </div>
+                        
+                        <!-- Instructions (English & Vietnamese) -->
                         <div class="form-group" x-show="$store.exercises.editingExercise">
                             <div class="flex justify-between align-center" style="margin-bottom: var(--space-xs);">
-                                <label class="form-label" style="margin-bottom: 0;">Instructions Text</label>
+                                <label class="form-label" style="margin-bottom: 0;">Instructions (English)</label>
                                 <button type="button" class="btn btn-secondary" 
                                         style="min-height: auto; height: 32px; padding: 0 var(--space-sm); font-size: var(--font-xs);"
                                         x-show="!$store.exercises.editingExercise?.pool_id"
@@ -740,11 +766,21 @@
                                     <span x-show="$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">Enriching...</span>
                                 </button>
                             </div>
-                            <textarea class="form-control" placeholder="Step-by-step guidelines..." x-model="$store.exercises.form.instructions"></textarea>
+                            <textarea class="form-control" placeholder="Step-by-step guidelines in English..." x-model="$store.exercises.form.instructions_en"></textarea>
                         </div>
                         <div class="form-group" x-show="$store.exercises.editingExercise">
-                            <label class="form-label">Pro Tips</label>
-                            <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips"></textarea>
+                            <label class="form-label">Instructions (Vietnamese)</label>
+                            <textarea class="form-control" placeholder="Hướng dẫn từng bước bằng tiếng Việt..." x-model="$store.exercises.form.instructions_vi"></textarea>
+                        </div>
+                        
+                        <!-- Pro Tips (English & Vietnamese) -->
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
+                            <label class="form-label">Pro Tips (English)</label>
+                            <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips_en"></textarea>
+                        </div>
+                        <div class="form-group" x-show="$store.exercises.editingExercise">
+                            <label class="form-label">Pro Tips (Vietnamese)</label>
+                            <textarea class="form-control" placeholder="Siết chặt cơ bụng, giữ thẳng lưng..." x-model="$store.exercises.form.pro_tips_vi"></textarea>
                         </div>
                         
                         <div class="modal-footer" style="justify-content: space-between; width: 100%; display: flex; align-items: center; padding: var(--space-lg) 0 0 0; border-top: 1px solid var(--border-glass);">

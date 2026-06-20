@@ -25,9 +25,13 @@ document.addEventListener('alpine:init', () => {
       name_eng: '',
       name_vie: '',
       instructions: '',
+      instructions_en: '',
+      instructions_vi: '',
       video_url: '',
       image_url: '',
       pro_tips: '',
+      pro_tips_en: '',
+      pro_tips_vi: '',
       tracking_type: 'WEIGHT_REPS',
       primary_muscle: '',
       secondary_muscle: [],
@@ -69,6 +73,11 @@ document.addEventListener('alpine:init', () => {
       this.tagsList = Array.from(tags).sort();
     },
 
+    get activeTags() {
+      const list = this.tagsList.map(t => t.toLowerCase().replace(' ', '_'));
+      return this.routineTags.filter(tag => list.includes(tag.value));
+    },
+
     get filteredItems() {
       const filtered = this.items.filter(ex => {
         // Search filter (name, vietnamese name, primary muscle, secondary muscle)
@@ -101,9 +110,13 @@ document.addEventListener('alpine:init', () => {
         name_eng: '',
         name_vie: '',
         instructions: '',
+        instructions_en: '',
+        instructions_vi: '',
         video_url: '',
         image_url: '',
         pro_tips: '',
+        pro_tips_en: '',
+        pro_tips_vi: '',
         tracking_type: 'WEIGHT_REPS',
         primary_muscle: '',
         secondary_muscle_str: '', // input helper
@@ -118,9 +131,13 @@ document.addEventListener('alpine:init', () => {
         name_eng: exercise.name_eng || '',
         name_vie: exercise.name_vie || '',
         instructions: exercise.instructions || '',
+        instructions_en: exercise.instructions_en || '',
+        instructions_vi: exercise.instructions_vi || '',
         video_url: exercise.video_url || '',
         image_url: exercise.image_url || '',
         pro_tips: exercise.pro_tips || '',
+        pro_tips_en: exercise.pro_tips_en || '',
+        pro_tips_vi: exercise.pro_tips_vi || '',
         tracking_type: exercise.tracking_type || 'WEIGHT_REPS',
         primary_muscle: exercise.primary_muscle || '',
         secondary_muscle_str: exercise.secondary_muscle ? exercise.secondary_muscle.join(', ') : '',
@@ -142,9 +159,13 @@ document.addEventListener('alpine:init', () => {
         name_eng: this.form.name_eng,
         name_vie: this.form.name_vie || null,
         instructions: this.form.instructions || null,
+        instructions_en: this.form.instructions_en || null,
+        instructions_vi: this.form.instructions_vi || null,
         video_url: this.form.video_url || null,
         image_url: this.form.image_url || null,
         pro_tips: this.form.pro_tips || null,
+        pro_tips_en: this.form.pro_tips_en || null,
+        pro_tips_vi: this.form.pro_tips_vi || null,
         tracking_type: this.form.tracking_type,
         primary_muscle: this.form.primary_muscle || null,
         secondary_muscle,
@@ -237,6 +258,55 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.enrichingIds = this.enrichingIds.filter(x => x !== id);
       }
+    },
+
+    async enrichAll() {
+      // Find all exercises that are not currently being enriched and are missing translation fields
+      const toEnrich = this.items.filter(ex => {
+        const isEnriching = this.enrichingIds.includes(ex.id);
+        const needsEnrich = !ex.name_vie || !ex.instructions_vi || !ex.pro_tips_vi;
+        return !isEnriching && needsEnrich;
+      });
+
+      if (toEnrich.length === 0) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'All exercises are already fully translated!', type: 'success' }
+        }));
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: `Auto-filling translations for ${toEnrich.length} exercises...`, type: 'info' }
+      }));
+
+      // We do NOT set this.loading = true to keep the exercise grid active.
+      for (const ex of toEnrich) {
+        // Mark as enriching to show overlay on its specific card
+        this.enrichingIds.push(ex.id);
+
+        try {
+          const res = await api.post(`/exercises/${ex.id}/enrich`);
+          // Update item in local store list immediately
+          const index = this.items.findIndex(item => item.id === ex.id);
+          if (index !== -1) {
+            this.items.splice(index, 1, res.data);
+          }
+          this.extractFilters();
+        } catch (err) {
+          console.error(`Failed to enrich exercise ${ex.name_eng}:`, err);
+        } finally {
+          // Unmark this exercise
+          this.enrichingIds = this.enrichingIds.filter(id => id !== ex.id);
+        }
+
+        // Brief delay between calls to be nice to n8n concurrency
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
+
+      window.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: 'All auto-fill translations completed!', type: 'success' }
+      }));
+      Alpine.store('workout').refreshTodaySession();
     }
   });
 });

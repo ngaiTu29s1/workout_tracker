@@ -1,13 +1,14 @@
 import os
 import asyncio
 
-# Set TESTING environment variable before importing app
+# Set TESTING environment variable and target test DB before importing app/database
 os.environ["TESTING"] = "True"
+os.environ["POSTGRES_DB"] = "fitness_os_test"
 
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from backend.app.main import app
 from backend.app.database import get_db, async_session_maker, engine, Base
@@ -16,10 +17,30 @@ from backend.app.database import get_db, async_session_maker, engine, Base
 def setup_test_db():
     # Make sure tables exist once for the entire test session
     loop = asyncio.new_event_loop()
+    
+    async def _create_db():
+        user = os.getenv("POSTGRES_USER", "fitness")
+        password = os.getenv("POSTGRES_PASSWORD", "change_me_please")
+        host = os.getenv("POSTGRES_HOST", "db")
+        port = os.getenv("POSTGRES_PORT", "5432")
+        admin_url = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/postgres"
+        
+        # Use autocommit connection to allow CREATE DATABASE command
+        admin_engine = create_async_engine(admin_url, isolation_level="AUTOCOMMIT")
+        async with admin_engine.connect() as conn:
+            exists = await conn.scalar(text("SELECT 1 FROM pg_database WHERE datname='fitness_os_test'"))
+            if not exists:
+                await conn.execute(text("CREATE DATABASE fitness_os_test"))
+        await admin_engine.dispose()
+
     async def _setup():
+        # Ensure test database exists first
+        await _create_db()
+        # Drop and create tables in the isolated test DB
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
+            
     loop.run_until_complete(_setup())
     loop.close()
     

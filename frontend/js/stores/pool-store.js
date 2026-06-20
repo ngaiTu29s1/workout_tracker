@@ -63,7 +63,9 @@ document.addEventListener('alpine:init', () => {
             // For personal exercises: use image_url (already formatted)
             if (exercise.image_url) return exercise.image_url;
             // Or if it's personal exercise response, it might have pool_image
-            if (exercise.pool_image) return `/pool/${exercise.pool_image}`;
+            if (exercise.pool_image) {
+                return exercise.pool_image.startsWith('/pool/') ? exercise.pool_image : `/pool/${exercise.pool_image}`;
+            }
             return null;
         },
         
@@ -71,7 +73,9 @@ document.addEventListener('alpine:init', () => {
             if (!exercise) return null;
             if (exercise.gif_path) return `/pool/${exercise.gif_path}`;
             if (exercise.video_url) return exercise.video_url;
-            if (exercise.pool_gif) return `/pool/${exercise.pool_gif}`;
+            if (exercise.pool_gif) {
+                return exercise.pool_gif.startsWith('/pool/') ? exercise.pool_gif : `/pool/${exercise.pool_gif}`;
+            }
             return null;
         }
     });

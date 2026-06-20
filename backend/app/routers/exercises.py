@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
@@ -120,4 +121,34 @@ async def add_from_pool(schema: AddFromPoolRequest, db: AsyncSession = Depends(g
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e)
+        )
+
+@router.post("/enrich-all")
+async def enrich_all():
+    from backend.app.database import async_session_maker
+    from backend.app.models.exercise import ExerciseMaster
+    from sqlalchemy import select
+    
+    # Fetch all exercise IDs using a temporary session
+    async with async_session_maker() as session:
+        stmt = select(ExerciseMaster.id)
+        res = await session.execute(stmt)
+        exercise_ids = res.scalars().all()
+    
+    # Enrich sequentially to prevent concurrent request collision on the n8n webhook/AI translator
+    try:
+        for ex_id in exercise_ids:
+            async with async_session_maker() as local_session:
+                service = EnrichmentService(local_session)
+                await service.enrich_exercise(ex_id)
+            await asyncio.sleep(0.1)  # brief pause to avoid rate limiting
+        return {
+            "status": "ok",
+            "message": f"Successfully enriched {len(exercise_ids)} exercises",
+            "data": {"count": len(exercise_ids)}
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Auto-fill failed: {str(e)}"
         )

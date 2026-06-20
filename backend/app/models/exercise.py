@@ -13,9 +13,13 @@ class ExerciseMaster(Base):
     name_eng: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     name_vie: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     instructions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instructions_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instructions_vi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     video_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     pro_tips: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pro_tips_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pro_tips_vi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     tracking_type: Mapped[str] = mapped_column(String(50), nullable=False)  # WEIGHT_REPS, BODYWEIGHT_REPS, TIME
     primary_muscle: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     secondary_muscle: Mapped[list] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"))

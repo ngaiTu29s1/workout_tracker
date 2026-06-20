@@ -84,6 +84,8 @@ class PoolService:
             name_eng=name_eng_title,
             name_vie=name_vie,
             instructions=instructions,
+            instructions_en=pool_ex.instructions_en,
+            instructions_vi=pool_ex.instructions_vi,
             image_url=image_url,
             video_url=video_url,
             primary_muscle=pool_ex.muscle_group,
