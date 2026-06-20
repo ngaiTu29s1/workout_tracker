@@ -3,6 +3,7 @@ import './stores/exercise-store.js';
 import './stores/calendar-store.js';
 import './stores/workout-store.js';
 import './stores/stats-store.js';
+import './stores/pool-store.js';
 
 document.addEventListener('alpine:init', () => {
   // Main app controller

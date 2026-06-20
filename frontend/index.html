@@ -19,6 +19,7 @@
     
     <!-- Core JS Application (registers stores and dynamically loads Alpine.js) -->
     <script type="module" src="js/app.js?v=2"></script>
+    <script type="module" src="js/stores/pool-store.js"></script>
 </head>
 <body>
 
@@ -75,10 +76,15 @@
                 <div class="catalog-header">
                     <div class="flex justify-between align-center">
                         <h1>Exercise Catalog</h1>
-                        <button class="btn btn-primary" @click="$store.exercises.openCreateModal()">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                            <span>Add New</span>
-                        </button>
+                        <div class="flex gap-sm">
+                            <button class="btn btn-secondary" style="min-height: 40px; padding: 0 var(--space-md);" @click="$store.exercises.openCreateModal()">
+                                <span>Create Manual</span>
+                            </button>
+                            <button class="btn btn-primary" style="min-height: 40px; padding: 0 var(--space-md);" @click="$store.pool.modalOpen = true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                <span>Browse Pool</span>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Search Input -->
@@ -107,60 +113,39 @@
                 </div>
 
                 <div x-show="!$store.exercises.loading && $store.exercises.filteredItems.length === 0" class="text-center mt-lg card">
-                    <p class="text-secondary">No exercises found matching filters.</p>
+                    <p class="text-secondary mb-md">No exercises found. Browse the exercise pool to get started!</p>
+                    <button class="btn btn-primary" style="margin: 0 auto;" @click="$store.pool.modalOpen = true">Browse Exercise Pool</button>
                 </div>
 
-                <div class="grid grid-1 grid-md-2 grid-lg-3" x-show="!$store.exercises.loading">
+                <div class="exercise-grid" x-show="!$store.exercises.loading">
                     <template x-for="ex in $store.exercises.filteredItems" :key="ex.id">
-                        <div class="card exercise-card">
-                            <div class="exercise-card__content">
-                                <div class="exercise-card__media">
-                                    <template x-if="ex.image_url">
-                                        <img :src="ex.image_url" alt="Exercise visual">
-                                    </template>
-                                    <template x-if="!ex.image_url">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                                            <path d="M2 8h16v8H2z"></path>
-                                            <line x1="6" y1="8" x2="6" y2="16"></line>
-                                            <line x1="14" y1="8" x2="14" y2="16"></line>
-                                        </svg>
-                                    </template>
+                        <div class="exercise-card" @click="$store.exercises.openEditModal(ex)" x-data="{ imgFailed: false }">
+                            <div class="exercise-card__image">
+                                <img x-show="!imgFailed && $store.pool.getImageUrl(ex)" 
+                                     :src="$store.pool.getImageUrl(ex)" 
+                                     :alt="ex.name_eng"
+                                     loading="lazy"
+                                     @error="imgFailed = true">
+                                <div class="exercise-card__placeholder" x-show="imgFailed || !$store.pool.getImageUrl(ex)">
+                                    <span x-text="ex.name_eng?.charAt(0)?.toUpperCase()"></span>
                                 </div>
-                                
-                                <div class="exercise-card__title" x-text="ex.name_eng"></div>
-                                <div class="exercise-card__subtitle" x-text="ex.name_vie || 'No Vietnamese Name'"></div>
+                            </div>
+                            
+                            <div class="exercise-card__info">
+                                <div class="exercise-card__muscle" x-text="ex.primary_muscle || 'General'"></div>
+                                <h4 class="exercise-card__name" x-text="ex.name_eng"></h4>
+                                <div class="exercise-card__vietnamese" x-text="ex.name_vie || 'No Vietnamese Name'"></div>
                                 
                                 <div class="exercise-card__tags">
-                                    <span class="badge badge-accent" x-text="ex.primary_muscle || 'General'"></span>
-                                    <template x-for="tag in ex.tags" :key="tag">
-                                         <span class="badge" :class="getRoutineTagClass(tag)" x-text="'#' + tag"></span>
+                                    <template x-for="tag in (ex.tags || []).slice(0, 3)">
+                                         <span class="badge" :class="getRoutineTagClass(tag)" x-text="tag"></span>
                                     </template>
                                 </div>
-
-                                <p class="text-secondary mb-md" style="font-size: var(--font-sm);" x-text="ex.instructions ? ex.instructions.substring(0, 100) + '...' : 'No instructions added yet.'"></p>
-                            </div>
-
-                            <div class="exercise-card__actions">
-                                <button class="btn btn-secondary flex-1" @click="$store.exercises.openEditModal(ex)">Edit</button>
-                                <button x-show="!ex.instructions || $store.exercises.enrichingIds.includes(ex.id)"
-                                        class="btn btn-secondary" style="padding: 0 12px; display: flex; align-items: center; justify-content: center;" 
-                                        @click="$store.exercises.enrichExercise(ex.id)" 
-                                        :disabled="$store.exercises.enrichingIds.includes(ex.id)"
-                                        title="AI Enrich Metadata">
-                                    <span x-show="!$store.exercises.enrichingIds.includes(ex.id)">🪄</span>
-                                    <div x-show="$store.exercises.enrichingIds.includes(ex.id)" class="spinner" style="width: 14px; height: 14px; border-width: 2px; margin: 0;"></div>
-                                </button>
-                                <button class="btn btn-danger" style="padding: 0 12px;" @click="$store.exercises.deleteExercise(ex.id)">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                </button>
                             </div>
                         </div>
                     </template>
                 </div>
             </section>
-
-
             <!-- ==========================================================================
                VIEW: CALENDAR VIEW
                ========================================================================== -->
@@ -425,22 +410,38 @@
                                 <!-- Accordion Body (Only visible when expanded) -->
                                 <div class="exercise-log-box__body" x-show="$store.workout.activeExerciseId === item.exercise.id" x-collapse>
                                     
-                                    <!-- Video Tutorial Section -->
-                                    <template x-if="item.exercise.video_url">
-                                        <div>
-                                            <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
-                                                <div class="video-container">
-                                                    <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                    <!-- Video/GIF Tutorial Section -->
+                                    <template x-if="item.exercise.video_url || item.exercise.pool_gif">
+                                        <div class="mb-md">
+                                            <!-- Inline GIF demonstration if available -->
+                                            <template x-if="item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/')))">
+                                                <div style="text-align: center;">
+                                                    <img :src="item.exercise.pool_gif ? '/pool/' + item.exercise.pool_gif : item.exercise.video_url" 
+                                                         class="exercise-gif"
+                                                         alt="Exercise demonstration"
+                                                         loading="lazy"
+                                                         style="max-width: 100%; border-radius: var(--radius-md); object-fit: contain; margin-bottom: 0;">
                                                 </div>
                                             </template>
-                                            <template x-if="isDirectVideo(item.exercise.video_url)">
-                                                <div class="video-container">
-                                                    <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
-                                                </div>
-                                            </template>
-                                            <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
-                                                <div class="mb-md">
-                                                    <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
+                                            
+                                            <!-- Standard Video Player (Embed/Direct/Link) -->
+                                            <template x-if="!(item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/'))))">
+                                                <div>
+                                                    <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
+                                                        <div class="video-container">
+                                                            <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="isDirectVideo(item.exercise.video_url)">
+                                                        <div class="video-container">
+                                                            <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
+                                                        <div>
+                                                            <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </template>
                                         </div>
@@ -681,6 +682,15 @@
                     <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.exercises.modalOpen = false">✕</button>
                 </div>
                 <div class="modal-body">
+                    <!-- GIF Demo Preview -->
+                    <div class="exercise-detail__media" x-show="$store.pool.getGifUrl($store.exercises.editingExercise)" style="margin-bottom: var(--space-md); text-align: center;">
+                        <img :src="$store.pool.getGifUrl($store.exercises.editingExercise)" 
+                             class="exercise-gif"
+                             alt="Exercise demonstration"
+                             loading="lazy"
+                             onerror="this.style.display='none'">
+                    </div>
+
                     <form @submit.prevent="$store.exercises.saveForm()">
                         <div class="form-group">
                             <label class="form-label">English Name *</label>
@@ -719,7 +729,16 @@
                             <input type="url" class="form-control" placeholder="Image link" x-model="$store.exercises.form.image_url">
                         </div>
                         <div class="form-group" x-show="$store.exercises.editingExercise">
-                            <label class="form-label">Instructions Text</label>
+                            <div class="flex justify-between align-center" style="margin-bottom: var(--space-xs);">
+                                <label class="form-label" style="margin-bottom: 0;">Instructions Text</label>
+                                <button type="button" class="btn btn-secondary" 
+                                        style="min-height: auto; height: 32px; padding: 0 var(--space-sm); font-size: var(--font-xs);"
+                                        @click="$store.exercises.enrichExercise($store.exercises.editingExercise.id)"
+                                        :disabled="$store.exercises.enrichingIds.includes($store.exercises.editingExercise.id)">
+                                    <span x-show="!$store.exercises.enrichingIds.includes($store.exercises.editingExercise.id)">🪄 AI Enrich</span>
+                                    <span x-show="$store.exercises.enrichingIds.includes($store.exercises.editingExercise.id)">Enriching...</span>
+                                </button>
+                            </div>
                             <textarea class="form-control" placeholder="Step-by-step guidelines..." x-model="$store.exercises.form.instructions"></textarea>
                         </div>
                         <div class="form-group" x-show="$store.exercises.editingExercise">
@@ -727,15 +746,22 @@
                             <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips"></textarea>
                         </div>
                         
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @click="$store.exercises.modalOpen = false">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Save Exercise</button>
+                        <div class="modal-footer" style="justify-content: space-between; width: 100%; display: flex; align-items: center; padding: var(--space-lg) 0 0 0; border-top: 1px solid var(--border-glass);">
+                            <div>
+                                <button type="button" class="btn btn-danger" x-show="$store.exercises.editingExercise" @click="if(confirm('Are you sure you want to delete this exercise? This will delete all logged data for it.')) { $store.exercises.deleteExercise($store.exercises.editingExercise.id); $store.exercises.modalOpen = false; }">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
+                            <div class="flex gap-sm">
+                                <button type="button" class="btn btn-secondary" @click="$store.exercises.modalOpen = false">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Exercise</button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
-
         <!-- Modal: Edit Weekly Presets Schedule -->
         <div class="modal-overlay" x-show="$store.calendar.presetsModalOpen" style="display: none;">
             <div class="modal-container" @click.away="$store.calendar.presetsModalOpen = false">
@@ -764,6 +790,72 @@
                             <button type="submit" class="btn btn-primary">Save Changes</button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Browse Exercise Pool -->
+        <div class="modal-overlay" x-show="$store.pool.modalOpen" style="display: none;" x-transition>
+            <div class="modal-container pool-search-modal" @click.away="$store.pool.modalOpen = false">
+                <div class="modal-header">
+                    <h2>Browse Exercise Pool</h2>
+                    <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.pool.modalOpen = false">✕</button>
+                </div>
+                
+                <!-- Search Input -->
+                <div class="modal__search">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="search" 
+                               class="form-control search-input" 
+                               placeholder="Search 1,300+ exercises..." 
+                               x-model="$store.pool.searchQuery"
+                               @input.debounce.300ms="$store.pool.search($store.pool.searchQuery)"
+                               autofocus>
+                    </div>
+                </div>
+                
+                <!-- Results -->
+                <div class="pool-results">
+                    <!-- Loading state -->
+                    <div x-show="$store.pool.searching" class="text-center py-md">
+                        <div class="spinner" style="margin: 0 auto;"></div>
+                        <p class="text-secondary mt-xs">Searching reference library...</p>
+                    </div>
+
+                    <!-- Search Result list -->
+                    <template x-for="ex in $store.pool.searchResults" :key="ex.id">
+                        <div class="pool-result-card">
+                            <img class="pool-result-card__thumb" 
+                                 :src="$store.pool.getImageUrl(ex)" 
+                                 :alt="ex.name"
+                                 loading="lazy"
+                                 onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22 style=%22background:%23222%22><text x=%2250%%22 y=%2255%%22 font-size=%2220%22 fill=%22%23555%22 font-family=%22sans-serif%22 text-anchor=%22middle%22>🏋️</text></svg>'">
+                            <div class="pool-result-card__info">
+                                <strong x-text="ex.name"></strong>
+                                <span class="text-secondary" style="font-size: var(--font-xs);" x-text="(ex.muscle_group || 'General') + ' · ' + (ex.equipment || 'Bodyweight')"></span>
+                            </div>
+                            <button class="btn btn-secondary" 
+                                    style="min-height: auto; padding: 6px 12px; font-size: var(--font-xs);" 
+                                    @click="$store.pool.addToPersonal(ex.id, [])">
+                                + Add
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <!-- Search query too short prompt -->
+                    <div x-show="$store.pool.searchQuery.length < 2" class="text-center py-lg text-secondary">
+                        <p>Type at least 2 characters to search the library of 1,300+ exercises.</p>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div x-show="$store.pool.searchQuery.length >= 2 && $store.pool.searchResults.length === 0 && !$store.pool.searching"
+                         class="pool-empty">
+                        <p>No reference exercises found matching "<span x-text="$store.pool.searchQuery"></span>".</p>
+                        <button type="button" class="btn btn-primary" @click="$store.exercises.openCreateModal(); $store.pool.modalOpen = false">
+                            Create manual exercise
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

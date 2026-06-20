@@ -489,3 +489,92 @@ textarea.form-control {
   border-color: var(--text-secondary);
 }
 
+
+/* Pool Search Modal and results styling */
+.pool-search-modal {
+  max-height: 85vh;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: modalEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.pool-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.pool-result-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+
+.pool-result-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pool-result-card__thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.pool-result-card__info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pool-result-card__info strong {
+  font-size: var(--font-base);
+  color: var(--text-primary);
+}
+
+.pool-result-card__info span {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+.pool-empty {
+  padding: var(--space-xl) var(--space-md);
+  text-align: center;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.exercise-gif {
+  width: 100%;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  aspect-ratio: 1.2;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.modal__search {
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-glass);
+}
