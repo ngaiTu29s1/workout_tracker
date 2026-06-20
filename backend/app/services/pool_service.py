@@ -1,3 +1,5 @@
+import os
+import json
 from typing import List, Optional
 from sqlalchemy import select, or_, and_, func
 from sqlalchemy.orm import joinedload
@@ -55,7 +57,7 @@ class PoolService:
         }
 
     async def add_to_personal(self, pool_id: int, tags: List[str], name_vie: Optional[str] = None) -> ExerciseMaster:
-        """Copy pool exercise -> personal exercise_master."""
+        """Copy pool exercise -> personal exercise_master, auto-applying cached translations if found."""
         # 1. Fetch pool exercise
         pool_ex = await self.get_by_id(pool_id)
         if not pool_ex:
@@ -73,23 +75,72 @@ class PoolService:
                 await self.db.refresh(existing)
             return existing
 
+        # Check in enrichment_cache.json for cache match
+        cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
+        cache_data = None
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cache = json.load(f)
+                    cache_key = pool_ex.name.strip().lower()
+                    if cache_key in cache:
+                        cache_data = cache[cache_key]
+            except Exception:
+                pass
+
         # 3. Create ExerciseMaster
-        instructions = pool_ex.instructions_vi if pool_ex.instructions_vi else pool_ex.instructions_en
+        instructions_en = pool_ex.instructions_en
+        instructions_vi = pool_ex.instructions_vi
         image_url = f"/pool/{pool_ex.image_path}" if pool_ex.image_path else None
         video_url = f"/pool/{pool_ex.gif_path}" if pool_ex.gif_path else None
         tracking_type = infer_tracking_type(pool_ex.equipment, pool_ex.category)
+        pro_tips_vi = None
+        pro_tips_en = None
+        primary_muscle = pool_ex.muscle_group
+        secondary_muscle = pool_ex.secondary_muscles or []
+
+        if cache_data:
+            if not name_vie:
+                name_vie = cache_data.get("name_vie")
+            instructions_en = cache_data.get("instructions_en") or instructions_en
+            instructions_vi = cache_data.get("instructions_vi") or cache_data.get("instructions") or instructions_vi
+            pro_tips_en = cache_data.get("pro_tips_en")
+            pro_tips_vi = cache_data.get("pro_tips_vi") or cache_data.get("pro_tips")
+            video_url = cache_data.get("video_url") or video_url
+            image_url = cache_data.get("image_url") or image_url
+            tracking_type = cache_data.get("tracking_type") or tracking_type
+            primary_muscle = cache_data.get("primary_muscle") or primary_muscle
+            secondary_muscle = cache_data.get("secondary_muscle") or secondary_muscle
+            tags = cache_data.get("tags") or tags
+
+        instructions = instructions_vi if instructions_vi else instructions_en
+        pro_tips = pro_tips_vi if pro_tips_vi else pro_tips_en
+
+        # Ensure we always keep/populate instructions (general fallback) and instructions_en
+        instructions = instructions_vi or instructions or instructions_en
+        instructions_en = instructions_en or instructions or "Perform the exercise with correct form."
+        if not instructions_vi and instructions:
+            instructions_vi = instructions
+
+        pro_tips = pro_tips_vi or pro_tips or pro_tips_en
+        pro_tips_en = pro_tips_en or pro_tips or "Focus on form and safety."
+        if not pro_tips_vi and pro_tips:
+            pro_tips_vi = pro_tips
 
         personal = ExerciseMaster(
             pool_id=pool_ex.id,
             name_eng=name_eng_title,
             name_vie=name_vie,
             instructions=instructions,
-            instructions_en=pool_ex.instructions_en,
-            instructions_vi=pool_ex.instructions_vi,
+            instructions_en=instructions_en,
+            instructions_vi=instructions_vi,
             image_url=image_url,
             video_url=video_url,
-            primary_muscle=pool_ex.muscle_group,
-            secondary_muscle=pool_ex.secondary_muscles or [],
+            pro_tips=pro_tips,
+            pro_tips_en=pro_tips_en,
+            pro_tips_vi=pro_tips_vi,
+            primary_muscle=primary_muscle,
+            secondary_muscle=secondary_muscle,
             tags=tags,
             tracking_type=tracking_type
         )

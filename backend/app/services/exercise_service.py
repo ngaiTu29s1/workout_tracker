@@ -1,3 +1,5 @@
+import os
+import json
 from typing import List, Optional
 from sqlalchemy import select, or_, and_, func
 from sqlalchemy.orm import joinedload
@@ -77,23 +79,86 @@ class ExerciseService:
 
     async def create_exercise(self, schema: ExerciseCreate) -> ExerciseMaster:
         """
-        Create a new exercise in exercise_master.
+        Create a new exercise in exercise_master, auto-applying cached translation/enrichment
+        metadata if it exists in enrichment_cache.json.
         """
+        cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
+        cache_data = None
+        if os.path.exists(cache_path):
+            try:
+                with open(cache_path, "r", encoding="utf-8") as f:
+                    cache = json.load(f)
+                    cache_key = schema.name_eng.strip().lower()
+                    if cache_key in cache:
+                        cache_data = cache[cache_key]
+            except Exception:
+                pass  # Fail silently and use schema fields
+
+        name_eng = title_case_name(schema.name_eng)
+        name_vie = schema.name_vie
+        instructions = schema.instructions
+        instructions_en = schema.instructions_en
+        instructions_vi = schema.instructions_vi
+        video_url = schema.video_url
+        image_url = schema.image_url
+        pro_tips = schema.pro_tips
+        pro_tips_en = schema.pro_tips_en
+        pro_tips_vi = schema.pro_tips_vi
+        tracking_type = schema.tracking_type
+        primary_muscle = schema.primary_muscle
+        secondary_muscle = schema.secondary_muscle
+        tags = schema.tags
+
+        if cache_data:
+            if not name_vie:
+                name_vie = cache_data.get("name_vie")
+            if not instructions_en:
+                instructions_en = cache_data.get("instructions_en")
+            if not instructions_vi:
+                instructions_vi = cache_data.get("instructions_vi") or cache_data.get("instructions")
+            if not pro_tips_en:
+                pro_tips_en = cache_data.get("pro_tips_en")
+            if not pro_tips_vi:
+                pro_tips_vi = cache_data.get("pro_tips_vi") or cache_data.get("pro_tips")
+            if not video_url:
+                video_url = cache_data.get("video_url")
+            if not image_url:
+                image_url = cache_data.get("image_url")
+            if not tracking_type:
+                tracking_type = cache_data.get("tracking_type")
+            if not primary_muscle:
+                primary_muscle = cache_data.get("primary_muscle")
+            if not secondary_muscle:
+                secondary_muscle = cache_data.get("secondary_muscle")
+            if not tags:
+                tags = cache_data.get("tags")
+
+        # Sync/Fallback instructions and pro_tips
+        instructions = instructions_vi or instructions or instructions_en
+        instructions_en = instructions_en or instructions or "Perform the exercise with correct form."
+        if not instructions_vi and instructions:
+            instructions_vi = instructions
+
+        pro_tips = pro_tips_vi or pro_tips or pro_tips_en
+        pro_tips_en = pro_tips_en or pro_tips or "Focus on form and safety."
+        if not pro_tips_vi and pro_tips:
+            pro_tips_vi = pro_tips
+
         db_exercise = ExerciseMaster(
-            name_eng=title_case_name(schema.name_eng),
-            name_vie=schema.name_vie,
-            instructions=schema.instructions,
-            instructions_en=schema.instructions_en,
-            instructions_vi=schema.instructions_vi,
-            video_url=schema.video_url,
-            image_url=schema.image_url,
-            pro_tips=schema.pro_tips,
-            pro_tips_en=schema.pro_tips_en,
-            pro_tips_vi=schema.pro_tips_vi,
-            tracking_type=schema.tracking_type,
-            primary_muscle=schema.primary_muscle,
-            secondary_muscle=schema.secondary_muscle,
-            tags=schema.tags
+            name_eng=name_eng,
+            name_vie=name_vie,
+            instructions=instructions,
+            instructions_en=instructions_en,
+            instructions_vi=instructions_vi,
+            video_url=video_url,
+            image_url=image_url,
+            pro_tips=pro_tips,
+            pro_tips_en=pro_tips_en,
+            pro_tips_vi=pro_tips_vi,
+            tracking_type=tracking_type,
+            primary_muscle=primary_muscle,
+            secondary_muscle=secondary_muscle,
+            tags=tags
         )
         self.db.add(db_exercise)
         await self.db.commit()

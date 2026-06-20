@@ -443,8 +443,161 @@ async def seed_weekly_presets(db: AsyncSession) -> None:
     else:
         logger.info("Weekly presets already exist. Skipping preset seeding.")
 
+async def auto_apply_cache(db: AsyncSession) -> None:
+    """
+    Read enrichment_cache.json if it exists.
+    1. For existing exercises in the database, if they have cached data, update their fields.
+    2. For cached exercises that do not exist in the database (e.g. custom user exercises),
+       automatically recreate them in the database.
+    """
+    cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
+    if not os.path.exists(cache_path):
+        logger.info("No enrichment cache file found to auto-apply.")
+        return
+
+    try:
+        with open(cache_path, "r", encoding="utf-8") as f:
+            cache = json.load(f)
+    except Exception as e:
+        logger.warning(f"Failed to load cache in auto-apply: {e}")
+        return
+
+    if not cache:
+        return
+
+    logger.info(f"Auto-applying cache for {len(cache)} entries...")
+
+    # Load all existing personal exercises
+    result = await db.execute(select(ExerciseMaster))
+    existing_exercises = result.scalars().all()
+    existing_by_name = {ex.name_eng.strip().lower(): ex for ex in existing_exercises}
+
+    for key, cached_data in cache.items():
+        clean_key = key.strip().lower()
+        if clean_key in existing_by_name:
+            # 1. Update existing exercise
+            exercise = existing_by_name[clean_key]
+            updated = False
+            
+            if not exercise.name_vie and "name_vie" in cached_data:
+                exercise.name_vie = cached_data["name_vie"]
+                updated = True
+            
+            # Instructions update
+            if not exercise.instructions_en and "instructions_en" in cached_data:
+                exercise.instructions_en = cached_data["instructions_en"]
+                updated = True
+            if not exercise.instructions_vi:
+                if "instructions_vi" in cached_data:
+                    exercise.instructions_vi = cached_data["instructions_vi"]
+                    updated = True
+                elif "instructions" in cached_data:
+                    exercise.instructions_vi = cached_data["instructions"]
+                    updated = True
+
+            # General instructions fallback
+            if (exercise.instructions_vi or exercise.instructions_en) and not exercise.instructions:
+                exercise.instructions = exercise.instructions_vi or exercise.instructions_en
+                updated = True
+
+            # Pro-tips update
+            if not exercise.pro_tips_en and "pro_tips_en" in cached_data:
+                exercise.pro_tips_en = cached_data["pro_tips_en"]
+                updated = True
+            if not exercise.pro_tips_vi:
+                if "pro_tips_vi" in cached_data:
+                    exercise.pro_tips_vi = cached_data["pro_tips_vi"]
+                    updated = True
+                elif "pro_tips" in cached_data:
+                    exercise.pro_tips_vi = cached_data["pro_tips"]
+                    updated = True
+
+            # General pro-tips fallback
+            if (exercise.pro_tips_vi or exercise.pro_tips_en) and not exercise.pro_tips:
+                exercise.pro_tips = exercise.pro_tips_vi or exercise.pro_tips_en
+                updated = True
+
+            if not exercise.video_url and cached_data.get("video_url"):
+                exercise.video_url = cached_data["video_url"]
+                updated = True
+            if not exercise.image_url and cached_data.get("image_url"):
+                exercise.image_url = cached_data["image_url"]
+                updated = True
+            if not exercise.tracking_type and cached_data.get("tracking_type"):
+                exercise.tracking_type = cached_data["tracking_type"]
+                updated = True
+            if not exercise.primary_muscle and cached_data.get("primary_muscle"):
+                exercise.primary_muscle = cached_data["primary_muscle"]
+                updated = True
+            if (not exercise.secondary_muscle) and cached_data.get("secondary_muscle"):
+                exercise.secondary_muscle = cached_data["secondary_muscle"]
+                updated = True
+            if (not exercise.tags) and cached_data.get("tags"):
+                exercise.tags = cached_data["tags"]
+                updated = True
+
+            if updated:
+                logger.info(f"Auto-applied cached fields to existing exercise: {exercise.name_eng}")
+                db.add(exercise)
+        else:
+            # 2. Re-create missing cached exercise
+            name_eng = title_case_name(key)
+            logger.info(f"Re-creating missing cached exercise in database: {name_eng}")
+            
+            # Check if this exercise exists in ExercisePool by exact/fuzzy match
+            pool_ex = await db.scalar(
+                select(ExercisePool).where(
+                    ExercisePool.name.ilike(key.strip())
+                ).limit(1)
+            )
+            if not pool_ex:
+                pool_ex = await db.scalar(
+                    select(ExercisePool).where(
+                        ExercisePool.name.ilike(f"%{key.strip()}%")
+                    ).limit(1)
+                )
+
+            pool_id = pool_ex.id if pool_ex else None
+            
+            # Fallbacks for instructions / pro-tips
+            instr_en = cached_data.get("instructions_en") or (pool_ex.instructions_en if pool_ex else None) or "Perform the exercise with correct form."
+            instr_vi = cached_data.get("instructions_vi") or cached_data.get("instructions") or (pool_ex.instructions_vi if pool_ex else None) or instr_en
+            
+            tips_en = cached_data.get("pro_tips_en") or "Focus on form and safety."
+            tips_vi = cached_data.get("pro_tips_vi") or cached_data.get("pro_tips") or tips_en
+
+            # Infer tracking type if not specified
+            tracking_type = cached_data.get("tracking_type")
+            if not tracking_type and pool_ex:
+                tracking_type = infer_tracking_type(pool_ex.equipment, pool_ex.category)
+            if not tracking_type:
+                tracking_type = "WEIGHT_REPS"
+
+            new_ex = ExerciseMaster(
+                pool_id=pool_id,
+                name_eng=name_eng,
+                name_vie=cached_data.get("name_vie") or name_eng,
+                instructions=instr_vi,
+                instructions_en=instr_en,
+                instructions_vi=instr_vi,
+                image_url=cached_data.get("image_url") or (f"/pool/{pool_ex.image_path}" if pool_ex and pool_ex.image_path else None),
+                video_url=cached_data.get("video_url") or (f"/pool/{pool_ex.gif_path}" if pool_ex and pool_ex.gif_path else None),
+                pro_tips=tips_vi,
+                pro_tips_en=tips_en,
+                pro_tips_vi=tips_vi,
+                primary_muscle=cached_data.get("primary_muscle") or (pool_ex.muscle_group if pool_ex else "Full Body"),
+                secondary_muscle=cached_data.get("secondary_muscle") or (pool_ex.secondary_muscles if pool_ex else []),
+                tags=cached_data.get("tags") or ["gym"],
+                tracking_type=tracking_type
+            )
+            db.add(new_ex)
+
+    await db.commit()
+    logger.info("Successfully finished auto-applying cache.")
+
 async def seed_db(db: AsyncSession) -> None:
     """Main seed entry point."""
     await seed_pool(db)
     await seed_personal_defaults(db)
     await seed_weekly_presets(db)
+    await auto_apply_cache(db)
