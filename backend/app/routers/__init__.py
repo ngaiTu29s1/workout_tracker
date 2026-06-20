@@ -3,6 +3,7 @@ from backend.app.routers.presets import router as presets
 from backend.app.routers.workouts import router as workouts
 from backend.app.routers.calendar import router as calendar
 from backend.app.routers.stats import router as stats
+from backend.app.routers.pool import router as pool
 
 __all__ = [
     "exercises",
@@ -10,4 +11,5 @@ __all__ = [
     "workouts",
     "calendar",
     "stats",
+    "pool",
 ]

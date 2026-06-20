@@ -7,6 +7,7 @@ from backend.app.schemas.stats import (
     ExerciseMetricHistoryPoint,
     OverviewStatsResponse
 )
+from backend.app.schemas.pool import PoolSearchResult, PoolDetail, AddFromPoolRequest
 
 __all__ = [
     "ExerciseCreate",
@@ -24,4 +25,7 @@ __all__ = [
     "ExerciseStatsResponse",
     "ExerciseMetricHistoryPoint",
     "OverviewStatsResponse",
+    "PoolSearchResult",
+    "PoolDetail",
+    "AddFromPoolRequest",
 ]

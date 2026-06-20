@@ -1,5 +1,6 @@
 from typing import List, Optional
 from sqlalchemy import select, or_, and_, func
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.models.exercise import ExerciseMaster
 from backend.app.schemas.exercise import ExerciseCreate, ExerciseUpdate
@@ -33,7 +34,7 @@ class ExerciseService:
         List all exercises, optionally filtering by search term (English/Vietnamese name),
         tag, or muscle group.
         """
-        query = select(ExerciseMaster)
+        query = select(ExerciseMaster).options(joinedload(ExerciseMaster.pool))
         filters = []
 
         if search:
@@ -70,7 +71,7 @@ class ExerciseService:
         """
         Retrieve a single exercise by ID.
         """
-        query = select(ExerciseMaster).where(ExerciseMaster.id == exercise_id)
+        query = select(ExerciseMaster).where(ExerciseMaster.id == exercise_id).options(joinedload(ExerciseMaster.pool))
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -78,7 +79,6 @@ class ExerciseService:
         """
         Create a new exercise in exercise_master.
         """
-        # Ensure values conform to docs/instruct.md mapping types
         db_exercise = ExerciseMaster(
             name_eng=title_case_name(schema.name_eng),
             name_vie=schema.name_vie,
@@ -94,7 +94,7 @@ class ExerciseService:
         self.db.add(db_exercise)
         await self.db.commit()
         await self.db.refresh(db_exercise)
-        return db_exercise
+        return await self.get_exercise(db_exercise.id)
 
     async def update_exercise(self, exercise_id: int, schema: ExerciseUpdate) -> Optional[ExerciseMaster]:
         """
@@ -115,7 +115,6 @@ class ExerciseService:
         await self.db.commit()
         await self.db.refresh(exercise)
         return exercise
-
 
     async def delete_exercise(self, exercise_id: int) -> bool:
         """

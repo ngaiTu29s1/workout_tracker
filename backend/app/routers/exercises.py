@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
 from backend.app.database import get_db
-from backend.app.schemas.exercise import ExerciseCreate, ExerciseUpdate
+from backend.app.schemas.exercise import ExerciseCreate, ExerciseUpdate, ExerciseResponse
+from backend.app.schemas.pool import AddFromPoolRequest
 from backend.app.services.exercise_service import ExerciseService
 from backend.app.services.enrichment_service import EnrichmentService
 
@@ -19,7 +20,7 @@ async def get_exercises(
     service = ExerciseService(db)
     exercises = await service.list_exercises(search=search, tag=tag, muscle=muscle)
     return {
-        "data": exercises,
+        "data": [ExerciseResponse.model_validate(ex) for ex in exercises],
         "message": "Exercises retrieved successfully",
         "status": "ok"
     }
@@ -34,7 +35,7 @@ async def get_exercise(id: int, db: AsyncSession = Depends(get_db)):
             detail=f"Exercise with ID {id} not found"
         )
     return {
-        "data": exercise,
+        "data": ExerciseResponse.model_validate(exercise),
         "message": "Exercise retrieved successfully",
         "status": "ok"
     }
@@ -44,7 +45,7 @@ async def create_exercise(schema: ExerciseCreate, db: AsyncSession = Depends(get
     service = ExerciseService(db)
     exercise = await service.create_exercise(schema)
     return {
-        "data": exercise,
+        "data": ExerciseResponse.model_validate(exercise),
         "message": "Exercise created successfully",
         "status": "ok"
     }
@@ -59,7 +60,7 @@ async def update_exercise(id: int, schema: ExerciseUpdate, db: AsyncSession = De
             detail=f"Exercise with ID {id} not found"
         )
     return {
-        "data": exercise,
+        "data": ExerciseResponse.model_validate(exercise),
         "message": "Exercise updated successfully",
         "status": "ok"
     }
@@ -85,7 +86,7 @@ async def enrich_exercise(id: int, db: AsyncSession = Depends(get_db)):
     try:
         exercise = await service.enrich_exercise(id)
         return {
-            "data": exercise,
+            "data": ExerciseResponse.model_validate(exercise),
             "message": "Exercise metadata enriched successfully",
             "status": "ok"
         }
@@ -98,4 +99,25 @@ async def enrich_exercise(id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI enrichment failed: {str(e)}"
+        )
+
+@router.post("/add-from-pool")
+async def add_from_pool(schema: AddFromPoolRequest, db: AsyncSession = Depends(get_db)):
+    from backend.app.services.pool_service import PoolService
+    service = PoolService(db)
+    try:
+        exercise = await service.add_to_personal(
+            pool_id=schema.pool_id,
+            tags=schema.tags,
+            name_vie=schema.name_vie
+        )
+        return {
+            "data": ExerciseResponse.model_validate(exercise),
+            "message": "Exercise added from pool successfully",
+            "status": "ok"
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e)
         )

@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import String, Text, DateTime, func, text
+from sqlalchemy import String, Text, DateTime, func, text, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.database import Base
@@ -9,6 +9,7 @@ class ExerciseMaster(Base):
     __tablename__ = "exercise_master"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    pool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("exercise_pool.id"), nullable=True)
     name_eng: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     name_vie: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     instructions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -22,5 +23,14 @@ class ExerciseMaster(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), server_default=func.now())
 
     # Relationships (resolved via forward references string)
+    pool: Mapped[Optional["ExercisePool"]] = relationship("ExercisePool", backref="personal_exercises")
     logs: Mapped[List["DailyWorkoutLog"]] = relationship("DailyWorkoutLog", back_populates="exercise", cascade="all, delete-orphan")
     stats: Mapped[List["WorkoutAggregatedStats"]] = relationship("WorkoutAggregatedStats", back_populates="exercise", cascade="all, delete-orphan")
+
+    @property
+    def pool_image(self) -> Optional[str]:
+        return f"/pool/{self.pool.image_path}" if self.pool and self.pool.image_path else None
+
+    @property
+    def pool_gif(self) -> Optional[str]:
+        return f"/pool/{self.pool.gif_path}" if self.pool and self.pool.gif_path else None

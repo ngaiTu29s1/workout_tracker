@@ -32,6 +32,9 @@ class ExerciseUpdate(BaseModel):
 class ExerciseResponse(ExerciseBase):
     id: int
     created_at: datetime
+    pool_id: Optional[int] = None
+    pool_image: Optional[str] = None
+    pool_gif: Optional[str] = None
 
     class Config:
         from_attributes = True

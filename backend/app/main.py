@@ -8,7 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.database import init_db, async_session_maker
-from backend.app.routers import exercises, presets, workouts, calendar, stats
+from backend.app.routers import exercises, presets, workouts, calendar, stats, pool
 from backend.app.seed import seed_db
 
 # Configure logging
@@ -58,6 +58,7 @@ app.include_router(presets)
 app.include_router(workouts)
 app.include_router(calendar)
 app.include_router(stats)
+app.include_router(pool)
 
 # Resolve path to frontend folder (2 levels up from backend/app/main.py)
 frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend"))
@@ -71,4 +72,3 @@ if pool_data_path:
 
 # Mount frontend static directory
 app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
-

@@ -18,6 +18,7 @@ def setup_test_db():
     loop = asyncio.new_event_loop()
     async def _setup():
         async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
     loop.run_until_complete(_setup())
     loop.close()
@@ -35,6 +36,7 @@ async def clean_database():
         await session.execute(text("DELETE FROM daily_overrides"))
         await session.execute(text("DELETE FROM weekly_presets"))
         await session.execute(text("DELETE FROM exercise_master"))
+        await session.execute(text("DELETE FROM exercise_pool"))
         await session.commit()
     yield
     # Dispose engine pool to avoid event loop conflicts in asyncpg
