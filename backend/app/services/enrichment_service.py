@@ -34,6 +34,40 @@ class EnrichmentService:
         except Exception as e:
             logger.warning(f"Failed to save enrichment cache: {e}")
 
+    def _resolve_bilingual_field(
+        self,
+        exercise: ExerciseMaster,
+        base_field: str,
+        enriched_data: dict,
+        default: str
+    ) -> tuple:
+        """
+        Resolve fallback logic for bilingual fields (instructions, pro_tips).
+        """
+        val = getattr(exercise, base_field, None)
+        val_en = getattr(exercise, f"{base_field}_en", None)
+        val_vi = getattr(exercise, f"{base_field}_vi", None)
+
+        # 1. Inherit from pool if it exists
+        if exercise.pool:
+            if not val_en:
+                val_en = getattr(exercise.pool, f"{base_field}_en", None)
+            if not val_vi:
+                val_vi = getattr(exercise.pool, f"{base_field}_vi", None)
+
+        # 2. Inherit from enriched_data
+        if not val_en and enriched_data:
+            val_en = enriched_data.get(f"{base_field}_en")
+        if not val_vi and enriched_data:
+            val_vi = enriched_data.get(f"{base_field}_vi") or enriched_data.get(base_field)
+
+        # 3. Apply general fallback rules
+        base_val = val_vi or val or val_en
+        en_val = val_en or base_val or default
+        vi_val = val_vi or base_val
+
+        return base_val, en_val, vi_val
+
     async def enrich_exercise(self, exercise_id: int) -> ExerciseMaster:
         """
         Trigger AI enrichment via n8n webhook.
@@ -95,13 +129,9 @@ class EnrichmentService:
         if not enriched_data or "name_vie" not in enriched_data or ("instructions" not in enriched_data and "instructions_vi" not in enriched_data):
             enriched_data = self._generate_mock_metadata(exercise.name_eng)
 
-        # 1. Inherit from pool first if this is a pool-linked exercise
+        # 1. Inherit from pool first if this is a pool-linked exercise (non-bilingual fields)
         if exercise.pool:
             pool = exercise.pool
-            if not exercise.instructions_en and pool.instructions_en:
-                exercise.instructions_en = pool.instructions_en
-            if not exercise.instructions_vi and pool.instructions_vi:
-                exercise.instructions_vi = pool.instructions_vi
             if not exercise.image_url and pool.image_path:
                 exercise.image_url = f"/pool/{pool.image_path}"
             if not exercise.video_url and pool.gif_path:
@@ -115,52 +145,30 @@ class EnrichmentService:
                 exercise.tracking_type = infer_tracking_type(pool.equipment, pool.category)
 
         # 2. Update empty exercise fields with AI enriched data
-        if not exercise.name_vie and "name_vie" in enriched_data:
+        if not exercise.name_vie and enriched_data and "name_vie" in enriched_data:
             exercise.name_vie = enriched_data["name_vie"]
             
-        # Support old/new formats for instructions:
-        if not exercise.instructions_en and "instructions_en" in enriched_data:
-            exercise.instructions_en = enriched_data["instructions_en"]
-            
-        if not exercise.instructions_vi:
-            if "instructions_vi" in enriched_data:
-                exercise.instructions_vi = enriched_data["instructions_vi"]
-            elif "instructions" in enriched_data:
-                exercise.instructions_vi = enriched_data["instructions"]
+        # Resolve bilingual fields
+        exercise.instructions, exercise.instructions_en, exercise.instructions_vi = self._resolve_bilingual_field(
+            exercise, "instructions", enriched_data, "Perform the exercise with correct form."
+        )
 
-        # Ensure we always keep/populate instructions (general fallback) and instructions_en
-        exercise.instructions = exercise.instructions_vi or exercise.instructions or exercise.instructions_en
-        exercise.instructions_en = exercise.instructions_en or exercise.instructions or "Perform the exercise with correct form."
-        if not exercise.instructions_vi and exercise.instructions:
-            exercise.instructions_vi = exercise.instructions
+        exercise.pro_tips, exercise.pro_tips_en, exercise.pro_tips_vi = self._resolve_bilingual_field(
+            exercise, "pro_tips", enriched_data, "Focus on form and safety."
+        )
 
-        if not exercise.video_url and "video_url" in enriched_data:
+        if not exercise.video_url and enriched_data and "video_url" in enriched_data:
             exercise.video_url = enriched_data["video_url"]
-        if not exercise.image_url and "image_url" in enriched_data:
+        if not exercise.image_url and enriched_data and "image_url" in enriched_data:
             exercise.image_url = enriched_data["image_url"]
 
-        if not exercise.pro_tips_en and "pro_tips_en" in enriched_data:
-            exercise.pro_tips_en = enriched_data["pro_tips_en"]
-            
-        if not exercise.pro_tips_vi:
-            if "pro_tips_vi" in enriched_data:
-                exercise.pro_tips_vi = enriched_data["pro_tips_vi"]
-            elif "pro_tips" in enriched_data:
-                exercise.pro_tips_vi = enriched_data["pro_tips"]
-
-        # General pro_tips fallback
-        exercise.pro_tips = exercise.pro_tips_vi or exercise.pro_tips or exercise.pro_tips_en
-        exercise.pro_tips_en = exercise.pro_tips_en or exercise.pro_tips or "Focus on form and safety."
-        if not exercise.pro_tips_vi and exercise.pro_tips:
-            exercise.pro_tips_vi = exercise.pro_tips
-
-        if not exercise.tracking_type and "tracking_type" in enriched_data:
+        if not exercise.tracking_type and enriched_data and "tracking_type" in enriched_data:
             exercise.tracking_type = enriched_data["tracking_type"]
-        if not exercise.primary_muscle and "primary_muscle" in enriched_data:
+        if not exercise.primary_muscle and enriched_data and "primary_muscle" in enriched_data:
             exercise.primary_muscle = enriched_data["primary_muscle"]
-        if (not exercise.secondary_muscle) and "secondary_muscle" in enriched_data:
+        if (not exercise.secondary_muscle) and enriched_data and "secondary_muscle" in enriched_data:
             exercise.secondary_muscle = enriched_data["secondary_muscle"]
-        if (not exercise.tags) and "tags" in enriched_data:
+        if (not exercise.tags) and enriched_data and "tags" in enriched_data:
             exercise.tags = enriched_data["tags"]
 
         # 3. Write back instructions_vi to the pool table if it is linked, to enrich the pool itself
