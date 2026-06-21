@@ -52,6 +52,18 @@ document.addEventListener('alpine:init', () => {
     toggleLang() {
       this.lang = this.lang === 'vi' ? 'en' : 'vi';
       this.addToast(`Switched language to ${this.lang.toUpperCase()}`, 'success');
+      this.updateTitle();
+    },
+
+    updateTitle(view = this.activeView) {
+      const isVi = this.lang === 'vi';
+      const viewTitles = {
+        session: isVi ? 'Theo dõi Buổi tập | Fitness OS' : 'Workout Session | Fitness OS',
+        calendar: isVi ? 'Lên kế hoạch tập | Fitness OS' : 'Workout Planner | Fitness OS',
+        catalog: isVi ? 'Danh sách Bài tập | Fitness OS' : 'Exercise Catalog | Fitness OS',
+        stats: isVi ? 'Thống kê & Phân tích | Fitness OS' : 'Workout Analytics | Fitness OS'
+      };
+      document.title = viewTitles[view] || 'Fitness OS';
     },
     
     getRoutineTagClass(tag) {
@@ -74,6 +86,7 @@ document.addEventListener('alpine:init', () => {
         const view = allowedViews.includes(hash) ? hash : 'session';
         
         this.activeView = view;
+        this.updateTitle(view);
         
         // Push hash to URL if it's empty
         if (!window.location.hash) {
