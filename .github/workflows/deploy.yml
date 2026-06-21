@@ -27,6 +27,7 @@ jobs:
       N8N_WEBHOOK_URL: http://n8n.local:5678/webhooks/enrich
       N8N_AUTOFILL_WEBHOOK_URL: http://n8n.local:5678/webhooks/autofill
       APP_PORT: 8000
+      API_SECRET_KEY: change_me_api_key_fitness_os_123
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

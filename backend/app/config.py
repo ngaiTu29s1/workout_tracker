@@ -35,6 +35,11 @@ class Settings(BaseSettings):
                 port = data.get("POSTGRES_PORT", "5432")
                 db = data.get("POSTGRES_DB", "fitness_os")
                 data["DATABASE_URL"] = f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{db}"
+            
+            # If API_SECRET_KEY is empty/blank in env, fallback to default key
+            api_key = data.get("API_SECRET_KEY")
+            if not api_key:
+                data["API_SECRET_KEY"] = "change_me_api_key_fitness_os_123"
         return data
 
     class Config:
