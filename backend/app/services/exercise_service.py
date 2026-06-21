@@ -186,8 +186,7 @@ class ExerciseService:
             exercise.pool.instructions_vi = exercise.pool.instructions_vi or exercise.instructions_vi
 
         await self.db.commit()
-        await self.db.refresh(exercise)
-        return exercise
+        return await self.get_exercise(exercise.id)
 
     async def delete_exercise(self, exercise_id: int) -> bool:
         """

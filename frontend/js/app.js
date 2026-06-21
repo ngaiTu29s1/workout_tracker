@@ -1,9 +1,9 @@
 // Import stores to execute and register them with Alpine
-import './stores/exercise-store.js';
-import './stores/calendar-store.js';
-import './stores/workout-store.js';
-import './stores/stats-store.js';
-import './stores/pool-store.js';
+import './stores/exercise-store.js?v=3';
+import './stores/calendar-store.js?v=3';
+import './stores/workout-store.js?v=3';
+import './stores/stats-store.js?v=3';
+import './stores/pool-store.js?v=3';
 
 document.addEventListener('alpine:init', () => {
   // Main app controller

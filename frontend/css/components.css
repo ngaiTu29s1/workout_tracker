@@ -578,3 +578,145 @@ textarea.form-control {
   padding: var(--space-md);
   border-bottom: 1px solid var(--border-glass);
 }
+
+/* 10. AI Suggestions Modal */
+.ai-suggest-modal {
+  max-width: 550px;
+}
+
+.ai-suggest-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.ai-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  transition: opacity var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.ai-suggest-item:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--bg-glass-hover);
+}
+
+.ai-suggest-item--disabled {
+  opacity: 0.45;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.ai-suggest-item__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-suggest-item__info strong {
+  display: block;
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-suggest-item__target {
+  font-size: var(--font-sm);
+  margin-top: 4px;
+}
+
+/* 11. Weekly Presets Modal & Layout */
+.preset-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.preset-row:hover {
+  background: var(--bg-glass-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.preset-day-label {
+  font-weight: 600;
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.preset-day-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+}
+
+/* Day-specific dot indicator colors to look vibrant */
+.preset-row:nth-child(1) .preset-day-dot { background: var(--danger); }
+.preset-row:nth-child(2) .preset-day-dot { background: var(--accent-primary); }
+.preset-row:nth-child(3) .preset-day-dot { background: var(--accent-secondary); }
+.preset-row:nth-child(4) .preset-day-dot { background: var(--accent-blue); }
+.preset-row:nth-child(5) .preset-day-dot { background: var(--warning); }
+.preset-row:nth-child(6) .preset-day-dot { background: var(--accent-pink); }
+.preset-row:nth-child(7) .preset-day-dot { background: var(--success); }
+
+.preset-select-wrapper {
+  position: relative;
+  width: 170px;
+}
+
+.preset-select {
+  width: 100% !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 var(--space-md) !important;
+  font-size: var(--font-sm) !important;
+  font-weight: 500;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='rgba(255,255,255,0.6)' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding-right: 28px !important;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.preset-select:focus {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 2px var(--border-glass-focus) !important;
+  outline: none;
+}
+
+.preset-select option {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  padding: 8px;
+}
+

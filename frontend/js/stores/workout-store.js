@@ -10,9 +10,21 @@ document.addEventListener('alpine:init', () => {
     loading: false,
     activeExerciseId: null, // ID of expanded exercise card
     
+    // AI Suggestion State
+    aiSuggestions: [],
+    isSuggesting: false,
+    previewOpen: false,
+    swappingId: null, // Track which card is being swapped
+    suggestionSource: null,
+    
     // Quick search list for adding custom exercise to today's workout
     exerciseSearchQuery: '',
     exerciseSearchOpen: false,
+
+    // Swap Modal State
+    swappingSessionItem: null,
+    swapModalOpen: false,
+    swapSearchQuery: '',
 
     async refreshTodaySession() {
       // Safely called to refresh the current list
@@ -37,9 +49,8 @@ document.addEventListener('alpine:init', () => {
         if (exerciseStore.items.length === 0) {
           await exerciseStore.fetchAll();
         }
-        const masterExercises = exerciseStore.items;
 
-        // 4. Combine logs and recommendations
+        // 4. Combine logs
         const combined = [];
         
         // Add all exercises that already have logs
@@ -55,22 +66,22 @@ document.addEventListener('alpine:init', () => {
           });
         });
 
-        // Add recommended exercises for this routine tag, if not already logged
-        if (routineTag && routineTag.toLowerCase() !== 'rest') {
-          const routineLower = routineTag.toLowerCase();
-          masterExercises.forEach(ex => {
-            const isAlreadyAdded = combined.some(item => item.exercise.id === ex.id);
-            if (!isAlreadyAdded && this.matchesRoutine(ex, routineLower)) {
-              combined.push({
-                exercise: ex,
-                logId: null,
-                is_completed: false,
-                tracking_data: [this.getDefaultSet(ex.tracking_type)],
-                isLogged: false,
-                isRecommended: true
-              });
-            }
-          });
+        // Sort combined list based on saved order in localStorage (if any)
+        const savedOrderStr = localStorage.getItem(`workout_order_${this.selectedDate}`);
+        if (savedOrderStr) {
+          try {
+            const savedOrder = JSON.parse(savedOrderStr);
+            combined.sort((a, b) => {
+              const idxA = savedOrder.indexOf(a.exercise.id);
+              const idxB = savedOrder.indexOf(b.exercise.id);
+              if (idxA === -1 && idxB === -1) return 0;
+              if (idxA === -1) return 1;
+              if (idxB === -1) return -1;
+              return idxA - idxB;
+            });
+          } catch (e) {
+            console.error('Failed to parse saved workout order', e);
+          }
         }
 
         this.sessionExercises = combined;
@@ -319,6 +330,404 @@ document.addEventListener('alpine:init', () => {
       this.activeExerciseId = ex.id;
       this.exerciseSearchQuery = '';
       this.exerciseSearchOpen = false;
+    },
+
+    get swapFilteredExercises() {
+      const exerciseStore = Alpine.store('exercises');
+      if (!this.swappingSessionItem) return [];
+      
+      const targetMuscle = (this.swappingSessionItem.exercise.primary_muscle || '').toLowerCase();
+      
+      let list = exerciseStore.items.filter(ex => {
+        // Exclude exercises already in the session
+        return !this.sessionExercises.some(item => Number(item.exercise.id) === Number(ex.id));
+      });
+
+      if (this.swapSearchQuery) {
+        const q = this.swapSearchQuery.toLowerCase();
+        list = list.filter(ex => {
+          const nameMatch = (ex.name_eng || '').toLowerCase().includes(q) || (ex.name_vie || '').toLowerCase().includes(q);
+          const muscleMatch = (ex.primary_muscle || '').toLowerCase().includes(q);
+          return nameMatch || muscleMatch;
+        });
+      }
+
+      // Sort: place same primary muscle first
+      if (targetMuscle) {
+        list.sort((a, b) => {
+          const aMatch = (a.primary_muscle || '').toLowerCase() === targetMuscle ? 1 : 0;
+          const bMatch = (b.primary_muscle || '').toLowerCase() === targetMuscle ? 1 : 0;
+          return bMatch - aMatch;
+        });
+      }
+      return list.slice(0, 10);
+    },
+
+    openSwapModal(sessionItem) {
+      this.swappingSessionItem = sessionItem;
+      this.swapSearchQuery = '';
+      this.swapModalOpen = true;
+    },
+
+    async swapSessionExerciseManually(ex) {
+      if (!this.swappingSessionItem) return;
+      
+      const appEl = document.querySelector('[x-data="app"]');
+      const lang = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'lang') : 'vi';
+      const sessionItem = this.swappingSessionItem;
+
+      if (sessionItem.isLogged) {
+        const confirmMsg = lang === 'vi' 
+          ? 'Đổi bài tập sẽ xóa dữ liệu đã lưu hôm nay của bài này. Bạn có chắc muốn đổi?' 
+          : 'Swapping this exercise will clear today\'s saved logs for it. Are you sure?';
+        if (!confirm(confirmMsg)) return;
+      }
+
+      this.loading = true;
+      try {
+        if (sessionItem.logId) {
+          await api.delete(`/workouts/${sessionItem.logId}`);
+        }
+        
+        sessionItem.exercise = ex;
+        sessionItem.logId = null;
+        sessionItem.isLogged = false;
+        sessionItem.is_completed = false;
+        
+        // Fetch suggested sets from single exercise suggestion endpoint
+        const res = await api.get(`/workouts/suggest-sets?exercise_id=${ex.id}`);
+        const suggestion = res.data;
+        
+        if (suggestion && suggestion.suggested_sets && suggestion.suggested_sets.length > 0) {
+          sessionItem.tracking_data = suggestion.suggested_sets.map((s, idx) => ({
+            set: s.set || (idx + 1),
+            kg: s.kg,
+            rep: s.rep,
+            time_seconds: s.time_seconds
+          }));
+        } else {
+          sessionItem.tracking_data = [this.getDefaultSet(ex.tracking_type)];
+        }
+        
+        this.activeExerciseId = ex.id;
+        this.sessionExercises = [...this.sessionExercises];
+        this.swapModalOpen = false;
+        this.swappingSessionItem = null;
+        this.swapSearchQuery = '';
+        
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: {
+            message: lang === 'vi' ? 'Đổi bài tập thành công!' : 'Exercise swapped successfully!',
+            type: 'success'
+          }
+        }));
+        
+        Alpine.store('calendar').fetchCalendar();
+        Alpine.store('stats').fetchOverview();
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: err.message || 'Failed to swap exercise', type: 'error' }
+        }));
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async swapSessionExerciseAuto() {
+      if (!this.swappingSessionItem) return;
+      const sessionItem = this.swappingSessionItem;
+      this.swapModalOpen = false;
+      this.swapSearchQuery = '';
+      await this.swapSessionExercise(sessionItem);
+      this.swappingSessionItem = null;
+    },
+
+    async fetchLocalSuggestions() {
+      if (this.routineTag === 'rest') {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'Hôm nay là ngày nghỉ (Rest), không thể gợi ý bài tập.', type: 'warning' }
+        }));
+        return;
+      }
+      this.isSuggesting = true;
+      try {
+        const res = await api.post('/workouts/local-suggest', {
+          date: this.selectedDate,
+          routine_tag: this.routineTag
+        });
+        
+        const suggestions = res.data || [];
+        const exerciseStore = Alpine.store('exercises');
+        if (exerciseStore.items.length === 0) {
+          await exerciseStore.fetchAll();
+        }
+        
+        this.aiSuggestions = suggestions.map(s => {
+          const sId = s.exercise_id || s.id;
+          const ex = exerciseStore.items.find(item => Number(item.id) === Number(sId));
+          return {
+            exercise: ex,
+            suggested_sets: s.suggested_sets || [],
+            checked: true
+          };
+        }).filter(s => s && s.exercise);
+        
+        this.suggestionSource = 'local';
+        this.previewOpen = true;
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: err.message || 'Failed to get suggestions', type: 'error' }
+        }));
+      } finally {
+        this.isSuggesting = false;
+      }
+    },
+
+    async fetchAiSuggestions() {
+      if (this.routineTag === 'rest') {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'Hôm nay là ngày nghỉ (Rest), không thể gợi ý bài tập.', type: 'warning' }
+        }));
+        return;
+      }
+      this.isSuggesting = true;
+      try {
+        const res = await api.post('/workouts/ai-suggest', {
+          date: this.selectedDate,
+          routine_tag: this.routineTag
+        });
+        
+        const suggestions = res.data || [];
+        const exerciseStore = Alpine.store('exercises');
+        if (exerciseStore.items.length === 0) {
+          await exerciseStore.fetchAll();
+        }
+        
+        this.aiSuggestions = suggestions.map(s => {
+          const sId = s.exercise_id || s.id;
+          const ex = exerciseStore.items.find(item => Number(item.id) === Number(sId));
+          return {
+            exercise: ex,
+            suggested_sets: s.suggested_sets || [],
+            checked: true
+          };
+        }).filter(s => s && s.exercise);
+        
+        this.suggestionSource = 'ai';
+        this.previewOpen = true;
+      } catch (err) {
+        let msg = err.message || 'Failed to get suggestions';
+        if (msg.includes('N8N Webhook not configured')) {
+          const appEl = document.querySelector('[x-data="app"]');
+          const lang = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'lang') : 'vi';
+          msg = lang === 'vi' 
+            ? 'N8N Webhook chưa được cấu hình. Vui lòng thiết lập N8N_AUTOFILL_WEBHOOK_URL trong file .env.' 
+            : 'N8N Webhook not configured. Please set N8N_AUTOFILL_WEBHOOK_URL in .env file.';
+        }
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: msg, type: 'error' }
+        }));
+      } finally {
+        this.isSuggesting = false;
+      }
+    },
+
+    async swapSuggestion(exerciseId) {
+      this.swappingId = exerciseId;
+      try {
+        const currentSuggestions = this.aiSuggestions.map(s => Number(s.exercise.id));
+        const endpoint = this.suggestionSource === 'local' ? '/workouts/local-swap' : '/workouts/ai-swap';
+        const res = await api.post(endpoint, {
+          date: this.selectedDate,
+          routine_tag: this.routineTag,
+          exercise_id: exerciseId,
+          current_suggestions: currentSuggestions
+        });
+        
+        const replacement = res.data;
+        if (replacement) {
+          const exerciseStore = Alpine.store('exercises');
+          const ex = exerciseStore.items.find(item => Number(item.id) === Number(replacement.exercise_id || replacement.id));
+          if (ex) {
+            const idx = this.aiSuggestions.findIndex(s => s.exercise && Number(s.exercise.id) === Number(exerciseId));
+            if (idx !== -1) {
+              this.aiSuggestions[idx] = {
+                exercise: ex,
+                suggested_sets: replacement.suggested_sets || [],
+                checked: true
+              };
+              this.aiSuggestions = [...this.aiSuggestions];
+            }
+          }
+        }
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: err.message || 'Failed to swap exercise', type: 'error' }
+        }));
+      } finally {
+        this.swappingId = null;
+      }
+    },
+
+    async applySuggestions() {
+      const checkedSuggestions = this.aiSuggestions.filter(s => s.checked);
+      if (checkedSuggestions.length === 0) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'Vui lòng chọn ít nhất một bài tập', type: 'warning' }
+        }));
+        return;
+      }
+
+      this.loading = true;
+      try {
+        const suggestionsPayload = checkedSuggestions.map(s => ({
+          exercise_id: s.exercise.id,
+          suggested_sets: s.suggested_sets
+        }));
+
+        await api.post('/workouts/apply-suggestions', {
+          date: this.selectedDate,
+          suggestions: suggestionsPayload
+        });
+
+        this.previewOpen = false;
+        this.aiSuggestions = [];
+        await this.fetchSession();
+
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: 'Đã áp dụng các bài tập gợi ý!', type: 'success' }
+        }));
+        
+        Alpine.store('calendar').fetchCalendar();
+        Alpine.store('stats').fetchOverview();
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: err.message || 'Failed to apply suggestions', type: 'error' }
+        }));
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    moveExercise(item, direction) {
+      const idx = this.sessionExercises.findIndex(ex => ex.exercise.id === item.exercise.id);
+      if (idx === -1) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= this.sessionExercises.length) return;
+      
+      const temp = this.sessionExercises[idx];
+      this.sessionExercises[idx] = this.sessionExercises[targetIdx];
+      this.sessionExercises[targetIdx] = temp;
+      
+      this.sessionExercises = [...this.sessionExercises];
+      
+      const newOrder = this.sessionExercises.map(ex => ex.exercise.id);
+      localStorage.setItem(`workout_order_${this.selectedDate}`, JSON.stringify(newOrder));
+    },
+
+    async swapSessionExercise(sessionItem) {
+      const appEl = document.querySelector('[x-data="app"]');
+      const lang = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'lang') : 'vi';
+
+      if (sessionItem.isLogged) {
+        const confirmMsg = lang === 'vi' 
+          ? 'Đổi bài tập sẽ xóa dữ liệu đã lưu hôm nay của bài này. Bạn có chắc muốn đổi?' 
+          : 'Swapping this exercise will clear today\'s saved logs for it. Are you sure?';
+        if (!confirm(confirmMsg)) return;
+      }
+      
+      this.loading = true;
+      try {
+        const currentIds = this.sessionExercises.map(item => Number(item.exercise.id));
+        const endpoint = this.suggestionSource === 'local' ? '/workouts/local-swap' : '/workouts/ai-swap';
+        const res = await api.post(endpoint, {
+          date: this.selectedDate,
+          routine_tag: this.routineTag,
+          exercise_id: sessionItem.exercise.id,
+          current_suggestions: currentIds
+        });
+        
+        const replacement = res.data;
+        if (replacement) {
+          const ex = exerciseStore.items.find(item => Number(item.id) === Number(replacement.exercise_id || replacement.id));
+          if (ex) {
+            if (sessionItem.logId) {
+              await api.delete(`/workouts/${sessionItem.logId}`);
+            }
+            
+            sessionItem.exercise = ex;
+            sessionItem.logId = null;
+            sessionItem.isLogged = false;
+            sessionItem.is_completed = false;
+            
+            if (replacement.suggested_sets && replacement.suggested_sets.length > 0) {
+              sessionItem.tracking_data = replacement.suggested_sets.map((s, idx) => ({
+                set: s.set || (idx + 1),
+                kg: s.kg,
+                rep: s.rep,
+                time_seconds: s.time_seconds
+              }));
+            } else {
+              sessionItem.tracking_data = [this.getDefaultSet(ex.tracking_type)];
+            }
+            
+            this.activeExerciseId = ex.id;
+            this.sessionExercises = [...this.sessionExercises];
+            
+            window.dispatchEvent(new CustomEvent('toast', {
+              detail: { 
+                message: lang === 'vi' ? 'Đổi bài tập thành công!' : 'Exercise swapped successfully!', 
+                type: 'success' 
+              }
+            }));
+            
+            Alpine.store('calendar').fetchCalendar();
+            Alpine.store('stats').fetchOverview();
+          }
+        }
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('toast', {
+          detail: { message: err.message || 'Failed to swap exercise', type: 'error' }
+        }));
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async removeSessionExercise(sessionItem) {
+      const appEl = document.querySelector('[x-data="app"]');
+      const lang = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'lang') : 'vi';
+
+      if (sessionItem.isLogged) {
+        const confirmMsg = lang === 'vi' 
+          ? 'Bạn có chắc chắn muốn xóa bài tập này khỏi buổi tập hôm nay? Lịch sử hiệp tập đã lưu của bài này sẽ bị xóa.' 
+          : 'Are you sure you want to remove this exercise from today\'s session? Its saved logs will be deleted.';
+        if (!confirm(confirmMsg)) return;
+        
+        try {
+          await api.delete(`/workouts/${sessionItem.logId}`);
+        } catch (err) {
+          window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message: err.message || 'Failed to delete log', type: 'error' }
+          }));
+          return;
+        }
+      }
+      
+      this.sessionExercises = this.sessionExercises.filter(item => item.exercise.id !== sessionItem.exercise.id);
+      
+      const newOrder = this.sessionExercises.map(ex => ex.exercise.id);
+      localStorage.setItem(`workout_order_${this.selectedDate}`, JSON.stringify(newOrder));
+      
+      window.dispatchEvent(new CustomEvent('toast', {
+        detail: { 
+          message: lang === 'vi' ? 'Đã xóa bài tập khỏi buổi tập!' : 'Exercise removed from session!', 
+          type: 'success' 
+        }
+      }));
+      
+      Alpine.store('calendar').fetchCalendar();
+      Alpine.store('stats').fetchOverview();
     },
 
     get progressPercentage() {

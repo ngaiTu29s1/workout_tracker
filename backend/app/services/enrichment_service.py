@@ -168,8 +168,9 @@ class EnrichmentService:
             exercise.pool.instructions_vi = exercise.pool.instructions_vi or exercise.instructions_vi
 
         await self.db.commit()
-        await self.db.refresh(exercise)
-        return exercise
+        from backend.app.services.exercise_service import ExerciseService
+        ex_service = ExerciseService(self.db)
+        return await ex_service.get_exercise(exercise.id)
 
     def _generate_mock_metadata(self, name_eng: str) -> dict:
         """

@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"                    # Expose for local dev
+      - "5433:5432"                    # Expose for local dev
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -31,6 +31,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      N8N_AUTOFILL_WEBHOOK_URL: ${N8N_AUTOFILL_WEBHOOK_URL}
       POOL_DATA_PATH: /app/static/pool
     depends_on:
       db:

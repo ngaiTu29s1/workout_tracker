@@ -72,8 +72,9 @@ class PoolService:
             if not existing.pool_id:
                 existing.pool_id = pool_ex.id
                 await self.db.commit()
-                await self.db.refresh(existing)
-            return existing
+            from backend.app.services.exercise_service import ExerciseService
+            ex_service = ExerciseService(self.db)
+            return await ex_service.get_exercise(existing.id)
 
         # Check in enrichment_cache.json for cache match
         cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
@@ -153,8 +154,6 @@ class PoolService:
             self.db.add(pool_ex)
             
         await self.db.commit()
-
-        # Eager load pool to return
-        stmt_refresh = select(ExerciseMaster).where(ExerciseMaster.id == personal.id).options(joinedload(ExerciseMaster.pool))
-        res = await self.db.execute(stmt_refresh)
-        return res.scalar_one()
+        from backend.app.services.exercise_service import ExerciseService
+        ex_service = ExerciseService(self.db)
+        return await ex_service.get_exercise(personal.id)
