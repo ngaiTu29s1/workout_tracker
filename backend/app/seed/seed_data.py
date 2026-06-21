@@ -328,7 +328,7 @@ async def seed_pool(db: AsyncSession) -> None:
                     "body_part": "chest" if any(x in name for x in ["bench", "fly", "push"]) else "legs",
                     "equipment": "barbell" if "barbell" in name else "body weight",
                     "target": "pectorals",
-                    "instructions": {"en": f"Instructions for {name}", "vi": f"Hướng dẫn cho {name}"},
+                    "instructions": {"en": f"Instructions for {name}", "vi": None},
                     "muscle_group": "Chest" if any(x in name for x in ["bench", "fly", "push"]) else "Legs",
                     "secondary_muscles": [],
                     "image": f"images/{i:04d}.jpg",
