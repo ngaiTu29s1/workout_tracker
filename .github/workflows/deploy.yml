@@ -52,9 +52,12 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
+        env:
+          DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
         run: |
-          CLEAN_USER=$(echo "${{ secrets.DOCKER_HUB_USERNAME }}" | tr -d '\r' | tr -d ' ' | tr -d '\n')
-          CLEAN_TOKEN=$(echo "${{ secrets.DOCKER_HUB_TOKEN }}" | tr -d '\r' | tr -d ' ' | tr -d '\n')
+          CLEAN_USER=$(echo "$DOCKER_HUB_USERNAME" | tr -d '\r' | tr -d ' ' | tr -d '\n')
+          CLEAN_TOKEN=$(echo "$DOCKER_HUB_TOKEN" | tr -d '\r' | tr -d ' ' | tr -d '\n')
           echo "$CLEAN_TOKEN" | docker login -u "$CLEAN_USER" --password-stdin
 
       - name: Extract metadata for Docker
