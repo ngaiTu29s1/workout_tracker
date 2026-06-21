@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
 
+    # API Secret Key
+    API_SECRET_KEY: str = "change_me_api_key_fitness_os_123"
+
     @model_validator(mode="before")
     @classmethod
     def assemble_db_url(cls, data: any) -> any:

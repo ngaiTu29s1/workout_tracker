@@ -32,6 +32,7 @@ services:
       POSTGRES_PORT: 5432
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
       N8N_AUTOFILL_WEBHOOK_URL: ${N8N_AUTOFILL_WEBHOOK_URL}
+      API_SECRET_KEY: ${API_SECRET_KEY}
       POOL_DATA_PATH: /app/static/pool
     depends_on:
       fitness-db:

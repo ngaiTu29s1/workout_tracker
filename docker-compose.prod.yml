@@ -29,6 +29,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fitness-db:5432/${POSTGRES_DB}
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
       N8N_AUTOFILL_WEBHOOK_URL: ${N8N_AUTOFILL_WEBHOOK_URL}
+      API_SECRET_KEY: ${API_SECRET_KEY}
       POOL_DATA_PATH: /app/static/pool
     depends_on:
       fitness-db:

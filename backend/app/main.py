@@ -1,7 +1,7 @@
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Depends
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend.app.database import init_db, async_session_maker
 from backend.app.routers import exercises, presets, workouts, calendar, stats, pool
 from backend.app.seed import seed_db
+from backend.app.auth import verify_api_key
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,12 +54,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 # Register routers
-app.include_router(exercises)
-app.include_router(presets)
-app.include_router(workouts)
-app.include_router(calendar)
-app.include_router(stats)
-app.include_router(pool)
+app.include_router(exercises, dependencies=[Depends(verify_api_key)])
+app.include_router(presets, dependencies=[Depends(verify_api_key)])
+app.include_router(workouts, dependencies=[Depends(verify_api_key)])
+app.include_router(calendar, dependencies=[Depends(verify_api_key)])
+app.include_router(stats, dependencies=[Depends(verify_api_key)])
+app.include_router(pool, dependencies=[Depends(verify_api_key)])
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
