@@ -1,0 +1,350 @@
+<!-- Modal: Create / Edit Exercise -->
+<div class="modal-overlay" x-show="$store.exercises.modalOpen" style="display: none;">
+    <div class="modal-container" @click.away="$store.exercises.modalOpen = false">
+        <div class="modal-header">
+            <h2 x-text="$store.exercises.editingExercise ? 'Edit Exercise' : 'Create Exercise'"></h2>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.exercises.modalOpen = false">✕</button>
+        </div>
+        <div class="modal-body">
+            <form @submit.prevent="if(await $store.exercises.saveExercise()) { $store.exercises.modalOpen = false; }">
+                <div class="form-group">
+                    <label class="form-label">English Name *</label>
+                    <input type="text" class="form-control" placeholder="e.g., Barbell Squat" x-model="$store.exercises.form.name_eng" required :disabled="$store.exercises.editingExercise?.pool_id">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vietnamese Name</label>
+                    <input type="text" class="form-control" placeholder="e.g., Gánh đùi" x-model="$store.exercises.form.name_vie">
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Primary Muscle</label>
+                    <input type="text" class="form-control" placeholder="e.g., Quads" x-model="$store.exercises.form.primary_muscle">
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Secondary Muscles (comma separated)</label>
+                    <input type="text" class="form-control" placeholder="e.g., Hamstrings, Glutes" x-model="$store.exercises.form.secondary_muscle_str">
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Routine Tags (comma separated)</label>
+                    <input type="text" class="form-control" placeholder="e.g., leg, lower_body" x-model="$store.exercises.form.tags_str">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tracking Type</label>
+                    <select class="form-control" x-model="$store.exercises.form.tracking_type">
+                        <option value="WEIGHT_REPS">Weight and Reps</option>
+                        <option value="BODYWEIGHT_REPS">Bodyweight Reps</option>
+                        <option value="TIME">Time (seconds)</option>
+                    </select>
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Video Instruction URL</label>
+                    <input type="url" class="form-control" placeholder="Youtube or direct mp4 link" x-model="$store.exercises.form.video_url">
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Image Thumbnail URL</label>
+                    <input type="url" class="form-control" placeholder="Image link" x-model="$store.exercises.form.image_url">
+                </div>
+                
+                <!-- Instructions (English & Vietnamese) -->
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <div class="flex justify-between align-center" style="margin-bottom: var(--space-xs);">
+                        <label class="form-label" style="margin-bottom: 0;">Instructions (English)</label>
+                        <button type="button" class="btn btn-secondary" 
+                                style="min-height: auto; height: 32px; padding: 0 var(--space-sm); font-size: var(--font-xs);"
+                                x-show="!$store.exercises.editingExercise?.pool_id"
+                                @click="$store.exercises.enrichExercise($store.exercises.editingExercise?.id)"
+                                :disabled="$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">
+                            <span x-show="!$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">🪄 AI Enrich</span>
+                            <span x-show="$store.exercises.enrichingIds.includes($store.exercises.editingExercise?.id)">Enriching...</span>
+                        </button>
+                    </div>
+                    <textarea class="form-control" placeholder="Step-by-step guidelines in English..." x-model="$store.exercises.form.instructions_en"></textarea>
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Instructions (Vietnamese)</label>
+                    <textarea class="form-control" placeholder="Hướng dẫn từng bước bằng tiếng Việt..." x-model="$store.exercises.form.instructions_vi"></textarea>
+                </div>
+                
+                <!-- Pro Tips (English & Vietnamese) -->
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Pro Tips (English)</label>
+                    <textarea class="form-control" placeholder="Keep heels flat, core tight..." x-model="$store.exercises.form.pro_tips_en"></textarea>
+                </div>
+                <div class="form-group" x-show="$store.exercises.editingExercise">
+                    <label class="form-label">Pro Tips (Vietnamese)</label>
+                    <textarea class="form-control" placeholder="Siết chặt cơ bụng, giữ thẳng lưng..." x-model="$store.exercises.form.pro_tips_vi"></textarea>
+                </div>
+                
+                <div class="modal-footer" style="justify-content: space-between; width: 100%; display: flex; align-items: center; padding: var(--space-lg) 0 0 0; border-top: 1px solid var(--border-glass);">
+                    <div>
+                        <button type="button" class="btn btn-danger" x-show="$store.exercises.editingExercise" @click="if(await $store.exercises.deleteExercise($store.exercises.editingExercise?.id)) { $store.exercises.modalOpen = false; }">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
+                    <div class="flex gap-sm">
+                        <button type="button" class="btn btn-secondary" @click="$store.exercises.modalOpen = false">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Exercise</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Weekly Presets Schedule -->
+<div class="modal-overlay" x-show="$store.calendar.presetsModalOpen" style="display: none;">
+    <div class="modal-container" @click.away="$store.calendar.presetsModalOpen = false">
+        <div class="modal-header">
+            <h2 x-text="lang === 'vi' ? 'Chỉnh sửa Lịch tuần Preset' : 'Edit Weekly Presets'"></h2>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.calendar.presetsModalOpen = false">✕</button>
+        </div>
+        <div class="modal-body">
+            <form @submit.prevent="$store.calendar.savePresets()">
+                <div class="preset-modal-list">
+                    <template x-for="(p, index) in $store.calendar.editingPresets" :key="p.day_of_week">
+                        <div class="preset-row">
+                            <span class="preset-day-label">
+                                <div class="preset-day-dot"></div>
+                                <span x-text="lang === 'vi' ? ['', 'Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'][p.day_of_week] : ['', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][p.day_of_week]"></span>
+                            </span>
+                            <div class="preset-select-wrapper">
+                                <select class="preset-select" x-model="p.routine_tag">
+                                    <option value="push" x-text="lang === 'vi' ? 'Push (Đẩy)' : 'Push'"></option>
+                                    <option value="pull" x-text="lang === 'vi' ? 'Pull (Kéo)' : 'Pull'"></option>
+                                    <option value="legs" x-text="lang === 'vi' ? 'Legs (Chân)' : 'Legs'"></option>
+                                    <option value="upper_body" x-text="lang === 'vi' ? 'Upper Body (Thân trên)' : 'Upper Body'"></option>
+                                    <option value="lower_body" x-text="lang === 'vi' ? 'Lower Body (Thân dưới)' : 'Lower Body'"></option>
+                                    <option value="core" x-text="lang === 'vi' ? 'Core (Cơ bụng)' : 'Core'"></option>
+                                    <option value="cardio" x-text="lang === 'vi' ? 'Cardio' : 'Cardio'"></option>
+                                    <option value="rest" x-text="lang === 'vi' ? 'Rest (Nghỉ ngơi)' : 'Rest'"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="modal-footer mt-lg">
+                    <button type="button" class="btn btn-secondary" @click="$store.calendar.presetsModalOpen = false" x-text="lang === 'vi' ? 'Hủy' : 'Cancel'"></button>
+                    <button type="submit" class="btn btn-primary" x-text="lang === 'vi' ? 'Lưu thay đổi' : 'Save Changes'"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Browse Exercise Pool -->
+<div class="modal-overlay" x-show="$store.pool.modalOpen" style="display: none;" x-transition>
+    <div class="modal-container pool-search-modal" @click.away="$store.pool.modalOpen = false">
+        <div class="modal-header">
+            <h2>Browse Exercise Pool</h2>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.pool.modalOpen = false">✕</button>
+        </div>
+        
+        <!-- Search Input -->
+        <div class="modal__search">
+            <div class="search-wrapper">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" 
+                       class="form-control search-input" 
+                       placeholder="Search 1,300+ exercises..." 
+                       x-model="$store.pool.searchQuery"
+                       @input.debounce.300ms="$store.pool.search($store.pool.searchQuery)"
+                       autofocus>
+            </div>
+        </div>
+        
+        <!-- Results -->
+        <div class="pool-results">
+            <!-- Loading state -->
+            <div x-show="$store.pool.searching" class="text-center py-md">
+                <div class="spinner" style="margin: 0 auto;"></div>
+                <p class="text-secondary mt-xs">Searching reference library...</p>
+            </div>
+
+            <!-- Suggestion header if query is empty -->
+            <div x-show="!$store.pool.searchQuery && !$store.pool.searching && $store.pool.searchResults.length > 0" 
+                 class="text-secondary" style="font-size: var(--font-sm); padding: 0 var(--space-xs) var(--space-xs) var(--space-xs); font-weight: 600;">
+                Suggested Exercises:
+            </div>
+
+            <!-- Search Result list -->
+            <template x-for="ex in $store.pool.searchResults" :key="ex.id">
+                <div class="pool-result-card">
+                    <img class="pool-result-card__thumb" 
+                         :src="$store.pool.getImageUrl(ex)" 
+                         :alt="ex.name"
+                         loading="lazy"
+                         onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2256%22 height=%2256%22 style=%22background:%23222%22><text x=%2250%%22 y=%2255%%22 font-size=%2220%22 fill=%22%23555%22 font-family=%22sans-serif%22 text-anchor=%22middle%22>🏋️</text></svg>'">
+                    <div class="pool-result-card__info">
+                        <strong x-text="ex.name"></strong>
+                        <span class="text-secondary" style="font-size: var(--font-xs);" x-text="(ex.muscle_group || 'General') + ' · ' + (ex.equipment || 'Bodyweight')"></span>
+                    </div>
+                    <button class="btn btn-secondary" 
+                            style="min-height: auto; padding: 6px 12px; font-size: var(--font-xs);" 
+                            @click="$store.pool.addToPersonal(ex.id, [])">
+                        + Add
+                    </button>
+                </div>
+            </template>
+            
+            <!-- Empty state -->
+            <div x-show="$store.pool.searchQuery && $store.pool.searchResults.length === 0 && !$store.pool.searching"
+                 class="pool-empty">
+                <p>No reference exercises found matching "<span x-text="$store.pool.searchQuery"></span>".</p>
+                <button type="button" class="btn btn-primary" @click="$store.exercises.openCreateModal(); $store.pool.modalOpen = false">
+                    Create manual exercise
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Suggestions Preview Modal -->
+<div class="modal-overlay" x-show="$store.workout.previewOpen" style="display: none;" x-transition>
+    <div class="modal-container ai-suggest-modal" @click.away="$store.workout.previewOpen = false">
+        <div class="modal-header">
+            <h2 x-text="$store.workout.suggestionSource === 'local' 
+                        ? (lang === 'vi' ? 'Xem trước buổi tập (Lên lịch tự động)' : 'Workout Preview (Auto Scheduled)') 
+                        : (lang === 'vi' ? 'Xem trước buổi tập (AI gợi ý)' : 'Workout Preview (AI Suggested)')"></h2>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.workout.previewOpen = false">✕</button>
+        </div>
+        <div class="modal-body">
+            <p class="text-secondary mb-md" style="font-size: var(--font-sm);" x-text="lang === 'vi' ? 'Dưới đây là các bài tập được đề xuất dựa trên lịch sử tập luyện của bạn. Tích chọn các bài bạn muốn tập và nhấn Áp dụng.' : 'Here are the recommended exercises based on your training history. Check the ones you want to do and click Apply.'"></p>
+            
+            <div class="ai-suggest-list">
+                <template x-for="item in $store.workout.aiSuggestions" :key="item.exercise.id">
+                    <div class="ai-suggest-item" :class="!item.checked ? 'ai-suggest-item--disabled' : ''">
+                        <!-- Checkbox / Left Action -->
+                        <label class="form-checkbox" style="margin: 0; padding: var(--space-xs);">
+                            <input type="checkbox" x-model="item.checked">
+                            <div class="checkbox-box"></div>
+                        </label>
+                        
+                        <!-- Content Info -->
+                        <div class="ai-suggest-item__info">
+                            <strong x-text="lang === 'vi' ? (item.exercise.name_vie || item.exercise.name_eng) : item.exercise.name_eng"></strong>
+                            <div class="text-secondary" style="font-size: var(--font-xs); margin-top: 2px;">
+                                <span x-text="item.exercise.primary_muscle"></span>
+                                <template x-if="item.exercise.equipment">
+                                    <span x-text="' · ' + item.exercise.equipment"></span>
+                                </template>
+                            </div>
+                            
+                            <!-- Suggested sets info -->
+                            <div class="ai-suggest-item__target">
+                                <template x-if="item.suggested_sets && item.suggested_sets.length > 0">
+                                    <span>
+                                        <strong style="color: var(--accent-primary);" x-text="lang === 'vi' ? 'Gợi ý: ' : 'Suggested: '"></strong>
+                                        <span x-text="item.suggested_sets.length"></span>
+                                        <span x-text="lang === 'vi' ? ' hiệp' : ' sets'"></span>
+                                        
+                                        <!-- If first set has weight/rep, show overloading info -->
+                                        <template x-if="item.suggested_sets[0].kg !== null || item.suggested_sets[0].rep !== null">
+                                            <span style="font-size: var(--font-xs); color: var(--text-secondary);" 
+                                                  x-text="' (' + (item.suggested_sets[0].kg !== null ? item.suggested_sets[0].kg + 'kg' : '') + 
+                                                          (item.suggested_sets[0].kg !== null && item.suggested_sets[0].rep !== null ? ' x ' : '') + 
+                                                          (item.suggested_sets[0].rep !== null ? item.suggested_sets[0].rep + ' reps' : '') + ')'"></span>
+                                        </template>
+                                        
+                                        <template x-if="item.suggested_sets[0].kg === null && item.suggested_sets[0].rep === null">
+                                            <span class="text-warning" style="font-size: 11px;" x-text="lang === 'vi' ? ' (chưa có lịch sử - tạ/reps để trống)' : ' (no history - weight/reps empty)'"></span>
+                                        </template>
+                                    </span>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <!-- Swap Button / Right Action -->
+                        <button class="btn btn-secondary btn-icon" 
+                                style="min-height: auto; width: 40px; height: 40px; border-radius: var(--radius-round); padding: 0; flex-shrink: 0;"
+                                @click="$store.workout.swapSuggestion(item.exercise.id)"
+                                :disabled="$store.workout.swappingId !== null"
+                                title="Swap Exercise">
+                            <span x-show="$store.workout.swappingId !== item.exercise.id">🔄</span>
+                            <span x-show="$store.workout.swappingId === item.exercise.id" class="spinner spinner--sm"></span>
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" @click="$store.workout.previewOpen = false" x-text="lang === 'vi' ? 'Hủy' : 'Cancel'"></button>
+            <button type="button" class="btn btn-primary" @click="$store.workout.applySuggestions()" x-text="lang === 'vi' ? 'Áp dụng' : 'Apply'"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Swap Exercise Modal -->
+<div class="modal-overlay" x-show="$store.workout.swapModalOpen" style="display: none;" x-transition>
+    <div class="modal-container" style="max-width: 500px;" @click.away="$store.workout.swapModalOpen = false">
+        <div class="modal-header">
+            <h2 x-text="lang === 'vi' ? 'Đổi bài tập' : 'Swap Exercise'"></h2>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.workout.swapModalOpen = false">✕</button>
+        </div>
+        <div class="modal-body">
+            <template x-if="$store.workout.swappingSessionItem">
+                <p class="text-secondary mb-md" style="font-size: var(--font-sm);">
+                    <span x-text="lang === 'vi' ? 'Đổi bài tập ' : 'Swapping '"></span>
+                    <strong style="color: var(--accent-primary);" x-text="lang === 'vi' ? ($store.workout.swappingSessionItem.exercise.name_vie || $store.workout.swappingSessionItem.exercise.name_eng) : $store.workout.swappingSessionItem.exercise.name_eng"></strong>
+                    <span x-text="lang === 'vi' ? ' thành:' : ' with:'"></span>
+                </p>
+            </template>
+
+            <!-- Auto Swap Option -->
+            <div class="flex justify-between align-center p-md card mb-md" style="border: 1px dashed var(--accent-primary); background: var(--bg-glass-hover);">
+                <div>
+                    <strong x-text="lang === 'vi' ? '🪄 Tự động đổi bằng AI' : '🪄 AI Auto Swap'"></strong>
+                    <div class="text-secondary" style="font-size: var(--font-xs); margin-top: 2px;" x-text="lang === 'vi' ? 'Chọn bài thay thế thông minh cùng nhóm cơ.' : 'Finds a smart replacement targeting same muscle.'"></div>
+                </div>
+                <button class="btn btn-primary" style="min-height: auto; padding: 8px 16px;" @click="$store.workout.swapSessionExerciseAuto()">
+                    Swap
+                </button>
+            </div>
+
+            <!-- Search Input -->
+            <div style="margin-bottom: var(--space-md);">
+                <input type="text" class="form-control" placeholder="Search personal pool..." x-model="$store.workout.swapSearchQuery">
+            </div>
+
+            <!-- Candidate List -->
+            <div class="flex flex-column gap-sm" style="max-height: 250px; overflow-y: auto; padding-right: 4px;">
+                <template x-for="ex in $store.workout.swapFilteredExercises" :key="ex.id">
+                    <div class="flex justify-between align-center p-sm card cursor-pointer"
+                         style="padding: 12px; margin: 0;"
+                         @click="$store.workout.swapSessionExerciseManually(ex)">
+                        <div>
+                            <strong x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng"></strong>
+                            <div class="text-secondary" style="font-size: var(--font-xs); margin-top: 2px;">
+                                <span class="badge badge-accent" style="font-size: 9px;" x-text="ex.primary_muscle || 'General'"></span>
+                                <!-- Highlight if same muscle -->
+                                <template x-if="$store.workout.swappingSessionItem && $store.workout.swappingSessionItem.exercise.primary_muscle === ex.primary_muscle">
+                                    <span style="color: var(--accent-primary); font-size: 10px; margin-left: var(--space-xs);" x-text="lang === 'vi' ? '• cùng nhóm cơ' : '• same muscle'"></span>
+                                </template>
+                            </div>
+                        </div>
+                        <span class="badge badge-accent" style="border-radius: var(--radius-sm); padding: 4px 8px; font-size: 11px;">Select</span>
+                    </div>
+                </template>
+                <div x-show="$store.workout.swapFilteredExercises.length === 0" class="text-secondary text-center p-md">
+                    No matching exercises in your personal pool.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Custom Confirmation Dialog -->
+<div class="modal-overlay" x-show="$store.confirm.open" style="display: none; z-index: 2000;" x-transition>
+    <div class="modal-container" style="max-width: 400px;" @click.away="$store.confirm.no()">
+        <div class="modal-header">
+            <h3 x-text="$store.confirm.title"></h3>
+            <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding: 0;" @click="$store.confirm.no()">✕</button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size: var(--font-base); line-height: 1.5; color: var(--text-primary);" x-text="$store.confirm.message"></p>
+        </div>
+        <div class="modal-footer" style="padding: var(--space-md) var(--space-lg);">
+            <button type="button" class="btn btn-secondary" @click="$store.confirm.no()" x-text="lang === 'vi' ? 'Hủy' : 'Cancel'"></button>
+            <button type="button" class="btn btn-danger" @click="$store.confirm.yes()" x-text="lang === 'vi' ? 'Xác nhận' : 'Confirm'"></button>
+        </div>
+    </div>
+</div>

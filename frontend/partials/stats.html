@@ -1,0 +1,101 @@
+<section x-show="activeView === 'stats'" class="view-enter" x-init="
+    $watch('activeView', value => {
+        if (value === 'stats') {
+            $nextTick(() => {
+                $store.stats.updateActivityChart();
+                $store.stats.updateExerciseChart();
+            });
+        }
+    });
+    $watch('$store.stats.loadingOverview', value => {
+        if (!value) {
+            $nextTick(() => $store.stats.updateActivityChart());
+        }
+    });
+    $watch('$store.stats.loadingExercise', value => {
+        if (!value) {
+            $nextTick(() => $store.stats.updateExerciseChart());
+        }
+    });
+    $watch('$store.stats.overview', value => {
+        $nextTick(() => $store.stats.updateActivityChart());
+    });
+    $watch('$store.stats.exerciseHistory', value => {
+        $nextTick(() => $store.stats.updateExerciseChart());
+    });
+">
+    <div class="stats-header-bar">
+        <h1>Progress Analytics</h1>
+        
+        <!-- Analytics range selector -->
+        <div class="calendar-view-selector" style="margin-bottom: 0;">
+            <button class="calendar-view-btn" :class="$store.stats.range === '30d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('30d')">30 Days</button>
+            <button class="calendar-view-btn" :class="$store.stats.range === '90d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('90d')">90 Days</button>
+            <button class="calendar-view-btn" :class="$store.stats.range === '180d' ? 'calendar-view-btn--active' : ''" @click="$store.stats.changeRange('180d')">6 Months</button>
+        </div>
+    </div>
+
+    <!-- Aggregated Overall Metrics Cards -->
+    <div class="stats-card-grid">
+        <div class="card stat-metric-card">
+            <div class="stat-metric-card__value" x-text="$store.stats.overview.total_workouts">0</div>
+            <div class="stat-metric-card__label">Workouts Logged</div>
+        </div>
+        <div class="card stat-metric-card">
+            <div class="stat-metric-card__value" x-text="$store.stats.overview.total_active_days">0</div>
+            <div class="stat-metric-card__label">Active Days</div>
+        </div>
+        <div class="card stat-metric-card">
+            <div class="stat-metric-card__value" x-text="Math.round($store.stats.overview.total_volume_kg).toLocaleString() + ' kg'">0 kg</div>
+            <div class="stat-metric-card__label">Total Volume</div>
+        </div>
+        <div class="card stat-metric-card">
+            <div class="stat-metric-card__value" x-text="$store.stats.overview.total_reps.toLocaleString()">0</div>
+            <div class="stat-metric-card__label">Total Reps</div>
+        </div>
+    </div>
+
+    <!-- Dashboard Activity Bar Chart -->
+    <div class="chart-wrapper">
+        <h2 class="mb-md">Workout Consistency</h2>
+        <div class="chart-container">
+            <canvas id="activityChartCanvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Exercise Metrics Line Chart -->
+    <div class="chart-wrapper">
+        <div class="flex justify-between align-center mb-md flex-wrap gap-md">
+            <h2>Exercise Progression</h2>
+            
+            <!-- Exercise Selector & Metric Switcher -->
+            <div class="flex gap-sm flex-wrap">
+                <select class="form-control" style="min-height: 40px; padding: 0 10px; width: 200px;"
+                        :value="$store.stats.selectedExerciseId"
+                        @change="$store.stats.fetchExerciseStats($event.target.value)">
+                    <template x-for="ex in $store.exercises.items" :key="ex.id">
+                        <option :value="ex.id" x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng"></option>
+                    </template>
+                </select>
+
+                <div class="calendar-view-selector" style="margin-bottom: 0;">
+                    <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'volume' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('volume')">Volume</button>
+                    <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'max_weight' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('max_weight')">1RM Est</button>
+                    <button class="calendar-view-btn" :class="$store.stats.activeMetric === 'total_reps' ? 'calendar-view-btn--active' : ''" @click="$store.stats.setMetric('total_reps')">Reps</button>
+                </div>
+            </div>
+        </div>
+
+        <div x-show="$store.stats.loadingExercise" class="text-center mt-lg mb-lg">
+            <div class="spinner"></div>
+        </div>
+
+        <div x-show="!$store.stats.loadingExercise && $store.stats.exerciseHistory.length === 0" class="text-center text-secondary py-lg">
+            No progress logs available for this exercise in the selected range.
+        </div>
+
+        <div class="chart-container" x-show="!$store.stats.loadingExercise && $store.stats.exerciseHistory.length > 0">
+            <canvas id="exerciseChartCanvas"></canvas>
+        </div>
+    </div>
+</section>

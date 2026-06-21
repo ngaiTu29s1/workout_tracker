@@ -1,0 +1,164 @@
+<section x-show="activeView === 'calendar'" class="view-enter">
+    <div class="flex justify-between align-center mb-lg flex-wrap gap-md">
+        <div>
+            <h1>Workout Planner</h1>
+            <p class="text-secondary mt-xs" x-show="$store.calendar.viewType === 'week'" x-text="$store.calendar.weekRangeLabel"></p>
+            <p class="text-secondary mt-xs" x-show="$store.calendar.viewType === 'month'" x-text="$store.calendar.monthYearLabel"></p>
+        </div>
+
+        <!-- Actions Bar -->
+        <div class="flex align-center gap-sm">
+            <!-- View Type Switcher -->
+            <div class="calendar-view-selector">
+                <button class="calendar-view-btn" :class="$store.calendar.viewType === 'week' ? 'calendar-view-btn--active' : ''" @click="$store.calendar.viewType = 'week'; $store.calendar.fetchCalendar()">Week</button>
+                <button class="calendar-view-btn" :class="$store.calendar.viewType === 'month' ? 'calendar-view-btn--active' : ''" @click="$store.calendar.viewType = 'month'; $store.calendar.fetchCalendar()">Month</button>
+            </div>
+
+            <!-- Date Navigation -->
+            <div class="flex align-center gap-xs">
+                <button class="btn btn-secondary btn-icon" @click="$store.calendar.prev()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <button class="btn btn-secondary" @click="$store.calendar.today()">Today</button>
+                <button class="btn btn-secondary btn-icon" @click="$store.calendar.next()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <!-- Config presets -->
+            <button class="btn btn-secondary" @click="$store.calendar.openPresetsModal()">
+                ⚙️ Presets
+            </button>
+        </div>
+    </div>
+
+    <div x-show="$store.calendar.loading" class="text-center mt-lg">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Tag Palette for Drag and Drop -->
+    <div id="routinePalette" class="routine-palette mb-md flex align-center gap-xs flex-wrap"
+         x-show="!$store.calendar.loading && $store.calendar.viewType === 'week'"
+         x-init="new Sortable($el, { group: { name: 'routines', pull: 'clone', put: false }, sort: false, animation: 150 })">
+        <span class="text-secondary mr-sm" style="font-size: var(--font-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Routine Tag Palette (Drag to Days):</span>
+        <span class="badge cursor-pointer routine-tag-item badge--push" data-tag="push">PUSH</span>
+        <span class="badge cursor-pointer routine-tag-item badge--pull" data-tag="pull">PULL</span>
+        <span class="badge cursor-pointer routine-tag-item badge--legs" data-tag="legs">LEGS</span>
+        <span class="badge cursor-pointer routine-tag-item badge--upper-body" data-tag="upper_body">UPPER BODY</span>
+        <span class="badge cursor-pointer routine-tag-item badge--lower-body" data-tag="lower_body">LOWER BODY</span>
+        <span class="badge cursor-pointer routine-tag-item badge--core" data-tag="core">CORE</span>
+        <span class="badge cursor-pointer routine-tag-item badge--cardio" data-tag="cardio">CARDIO</span>
+        <span class="badge cursor-pointer routine-tag-item badge--rest" data-tag="rest">REST</span>
+    </div>
+
+    <!-- WEEK VIEW GRID -->
+    <div class="week-grid" x-show="!$store.calendar.loading && $store.calendar.viewType === 'week'" x-init="
+        $watch('$store.calendar.days', value => {
+            $nextTick(() => {
+                document.querySelectorAll('.day-routine-dropzone').forEach(el => {
+                    // Destroy old sortable instance if any
+                    if (el.sortable) el.sortable.destroy();
+                    
+                    el.sortable = new Sortable(el, {
+                        group: { name: 'routines', pull: 'clone' },
+                        animation: 150,
+                        onAdd: async (evt) => {
+                            const targetDate = el.getAttribute('data-date');
+                            const tag = evt.item.getAttribute('data-tag');
+                            
+                            await $store.calendar.setOverride(targetDate, tag);
+                            
+                            if (evt.item.parentNode) {
+                                evt.item.parentNode.removeChild(evt.item);
+                            }
+                        }
+                    });
+                });
+            });
+        })
+    ">
+        <template x-for="day in $store.calendar.days" :key="day.date + '-' + $store.calendar.refreshCounter">
+            <div class="calendar-day-box cursor-pointer"
+                 :class="day.date === window.formatDateLocal(new Date()) ? 'calendar-day-box--today' : ''"
+                 x-data="{ popoverOpen: false }"
+                 @click="
+                    $store.workout.selectedDate = day.date;
+                    window.location.hash = '#session';
+                 ">
+                <div class="calendar-day-box__header">
+                    <span class="calendar-day-box__dayname" x-text="day.weekday_name.substring(0,3)"></span>
+                    <span class="calendar-day-box__number" x-text="new Date(day.date).getDate()"></span>
+                </div>
+                
+                <!-- Routine Drag and Drop Area -->
+                <div class="day-routine-dropzone-container" @click.stop="">
+                    <div class="day-routine-dropzone" :data-date="day.date" style="min-height: 48px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.01); border-radius: var(--radius-sm); border: 1px dashed rgba(255,255,255,0.05); margin-bottom: var(--space-xs);">
+                        <span class="badge cursor-pointer calendar-day-box__routine" 
+                              x-show="day.routine_tag"
+                              :class="getRoutineTagClass(day.routine_tag)"
+                              :data-tag="day.routine_tag"
+                              @click="popoverOpen = !popoverOpen"
+                              x-text="(day.routine_tag || '').toUpperCase().replace('_', ' ')"></span>
+                    </div>
+
+                    <!-- Popover change tag menu -->
+                    <div x-show="popoverOpen" @click.away="popoverOpen = false" class="routine-popover" style="display: none;">
+                        <span class="form-label" style="font-size: 10px; margin-bottom: var(--space-xs); display: block; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Update Routine</span>
+                        <template x-for="tagObj in [
+                            { value: 'push', label: 'Push' },
+                            { value: 'pull', label: 'Pull' },
+                            { value: 'legs', label: 'Legs' },
+                            { value: 'upper_body', label: 'Upper Body' },
+                            { value: 'lower_body', label: 'Lower Body' },
+                            { value: 'core', label: 'Core' },
+                            { value: 'cardio', label: 'Cardio' },
+                            { value: 'rest', label: 'Rest' }
+                        ]" :key="tagObj.value">
+                            <button class="btn btn-secondary" style="min-height: 32px; padding: 4px 8px; font-size: var(--font-xs); justify-content: flex-start; text-transform: uppercase;"
+                                    @click="$store.calendar.setOverride(day.date, tagObj.value); popoverOpen = false;"
+                                    x-text="tagObj.label"></button>
+                        </template>
+                        <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 4px 0;">
+                        <button class="btn btn-danger" style="min-height: 32px; padding: 4px 8px; font-size: var(--font-xs); justify-content: flex-start; text-transform: uppercase;"
+                                @click="$store.calendar.setOverride(day.date, null); popoverOpen = false;">
+                            Reset Preset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- MONTH VIEW GRID -->
+    <div x-show="!$store.calendar.loading && $store.calendar.viewType === 'month'" class="view-enter">
+        <div class="month-grid-header">
+            <div class="month-grid-header__day">Mon</div>
+            <div class="month-grid-header__day">Tue</div>
+            <div class="month-grid-header__day">Wed</div>
+            <div class="month-grid-header__day">Thu</div>
+            <div class="month-grid-header__day">Fri</div>
+            <div class="month-grid-header__day">Sat</div>
+            <div class="month-grid-header__day">Sun</div>
+        </div>
+        <div class="month-grid">
+            <template x-for="day in $store.calendar.days" :key="day.date + '-' + $store.calendar.refreshCounter">
+                <div class="calendar-month-day"
+                     :class="[
+                        day.date === window.formatDateLocal(new Date()) ? 'calendar-month-day--today' : '',
+                        new Date(day.date).getMonth() !== $store.calendar.currentDate.getMonth() ? 'calendar-month-day--other-month' : ''
+                     ]"
+                     @click="
+                        $store.workout.selectedDate = day.date;
+                        window.location.hash = '#session';
+                     ">
+                    <span class="calendar-month-day__number" x-text="new Date(day.date).getDate()"></span>
+                    
+                    <span class="badge" style="font-size: 8px; padding: 2px 4px; align-self: flex-start;"
+                          x-show="day.routine_tag"
+                          :class="getRoutineTagClass(day.routine_tag)"
+                          x-text="(day.routine_tag || '').toUpperCase().replace('_', ' ')"></span>
+                </div>
+            </template>
+        </div>
+    </div>
+</section>

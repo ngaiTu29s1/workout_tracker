@@ -167,7 +167,30 @@ const loadScript = (src) => {
   });
 };
 
-// Load collapse plugin first, then Alpine
-loadScript('https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js')
+// Function to load partial HTML files into their containers
+const loadPartials = () => {
+  const partials = [
+    { id: 'partial-catalog', url: 'partials/catalog.html' },
+    { id: 'partial-calendar', url: 'partials/calendar.html' },
+    { id: 'partial-session', url: 'partials/session.html' },
+    { id: 'partial-stats', url: 'partials/stats.html' },
+    { id: 'partial-modals', url: 'partials/modals.html' }
+  ];
+  return Promise.all(partials.map(p => {
+    return fetch(p.url)
+      .then(res => {
+        if (!res.ok) throw new Error(`Failed to load ${p.url}`);
+        return res.text();
+      })
+      .then(html => {
+        const el = document.getElementById(p.id);
+        if (el) el.innerHTML = html;
+      });
+  }));
+};
+
+// Load partials first, then collapse plugin, then Alpine
+loadPartials()
+  .then(() => loadScript('https://unpkg.com/@alpinejs/collapse@3.x.x/dist/cdn.min.js'))
   .then(() => loadScript('https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js'))
-  .catch(err => console.error('Failed to load Alpine.js', err));
+  .catch(err => console.error('Failed to load partials or Alpine.js', err));

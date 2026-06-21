@@ -1,0 +1,309 @@
+<section x-show="activeView === 'session'" class="view-enter" x-data="{
+    getVideoEmbedUrl(url) {
+        if (!url) return '';
+        if (url.includes('youtube.com/embed/')) return url;
+        
+        // Youtube long format
+        if (url.includes('youtube.com/watch')) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return match && match[2].length === 11 ? 'https://www.youtube.com/embed/' + match[2] : '';
+        }
+        // Youtube short format
+        if (url.includes('youtu.be/')) {
+            const parts = url.split('/');
+            const id = parts[parts.length - 1].split('?')[0];
+            return 'https://www.youtube.com/embed/' + id;
+        }
+        return '';
+    },
+    isDirectVideo(url) {
+        if (!url) return false;
+        return url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.ogg');
+    }
+}">
+    <div class="session-layout">
+        <!-- Session Navigation Header -->
+        <div class="flex justify-between align-center card">
+            <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(-1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            
+            <div class="text-center">
+                <h2 x-text="new Date($store.workout.selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })"></h2>
+                <div class="flex align-center justify-center gap-sm mt-sm flex-wrap">
+                    <div class="badge" :class="getRoutineTagClass($store.workout.routineTag)" x-text="'Today\'s Routine: ' + ($store.workout.routineTag || 'loading...').toUpperCase().replace('_', ' ')"></div>
+                    <template x-if="$store.workout.routineTag && $store.workout.routineTag.toLowerCase() !== 'rest' && $store.workout.sessionExercises.length === 0">
+                        <div class="flex gap-xs">
+                            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: var(--font-xs); min-height: auto; height: 26px;"
+                                    @click="$store.workout.fetchLocalSuggestions()"
+                                    :disabled="$store.workout.isSuggesting">
+                                <span x-show="!$store.workout.isSuggesting">⚙️ <span x-text="lang === 'vi' ? 'Tự lên lịch' : 'Local Fill'"></span></span>
+                                <span x-show="$store.workout.isSuggesting" class="spinner spinner--sm"></span>
+                            </button>
+                            <button class="btn btn-primary" style="padding: 4px 10px; font-size: var(--font-xs); min-height: auto; height: 26px;"
+                                    @click="$store.workout.fetchAiSuggestions()"
+                                    :disabled="$store.workout.isSuggesting">
+                                <span x-show="!$store.workout.isSuggesting">🪄 <span x-text="lang === 'vi' ? 'AI gợi ý' : 'AI Fill'"></span></span>
+                                <span x-show="$store.workout.isSuggesting" class="spinner spinner--sm"></span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <button class="btn btn-secondary btn-icon" @click="$store.workout.changeDate(1)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="card" x-show="$store.workout.sessionExercises.length > 0">
+            <div class="flex justify-between align-center mb-sm">
+                <span class="form-label">Workout Progress</span>
+                <span class="badge badge-accent" x-text="$store.workout.progressPercentage + '% completed'"></span>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.05); height: 8px; border-radius: var(--radius-round); overflow: hidden;">
+                <div style="background: var(--accent-gradient); height: 100%; transition: width 0.3s ease;" :style="'width: ' + $store.workout.progressPercentage + '%'"></div>
+            </div>
+        </div>
+
+        <div x-show="$store.workout.loading" class="text-center mt-lg">
+            <div class="spinner"></div>
+            <p class="text-secondary mt-sm">Fetching workout data...</p>
+        </div>
+
+        <div x-show="!$store.workout.loading && $store.workout.sessionExercises.length === 0" class="text-center mt-lg card">
+            <template x-if="$store.workout.routineTag && $store.workout.routineTag.toLowerCase() === 'rest'">
+                <div>
+                    <p class="text-secondary mb-md" x-text="lang === 'vi' ? 'Hôm nay là ngày nghỉ (Rest). Hãy nghỉ ngơi để phục hồi cơ bắp!' : 'Today is Rest day. Take it easy and recover!'"></p>
+                    <button class="btn btn-secondary" style="margin: 0 auto;" @click="$store.workout.exerciseSearchOpen = true" x-text="lang === 'vi' ? 'Thêm bài tập thủ công' : 'Add Custom Exercise'"></button>
+                </div>
+            </template>
+            <template x-if="$store.workout.routineTag && $store.workout.routineTag.toLowerCase() !== 'rest'">
+                <div>
+                    <p class="text-secondary mb-md" x-html="lang === 'vi' ? 'Hôm nay bạn tập <strong>' + $store.workout.routineTag.toUpperCase().replace('_', ' ') + '</strong>. Chưa có bài tập nào được lên lịch.' : 'Today you train <strong>' + $store.workout.routineTag.toUpperCase().replace('_', ' ') + '</strong>. No exercises scheduled yet.'"></p>
+                    <div class="flex gap-sm justify-center flex-wrap">
+                        <button class="btn btn-primary" @click="$store.workout.fetchLocalSuggestions()" :disabled="$store.workout.isSuggesting">
+                            <span x-show="!$store.workout.isSuggesting">⚙️ <span x-text="lang === 'vi' ? 'Tự lên lịch' : 'Local Fill'"></span></span>
+                            <span x-show="$store.workout.isSuggesting" class="spinner spinner--sm"></span>
+                        </button>
+                        <button class="btn btn-primary" @click="$store.workout.fetchAiSuggestions()" :disabled="$store.workout.isSuggesting">
+                            <span x-show="!$store.workout.isSuggesting">🪄 <span x-text="lang === 'vi' ? 'AI gợi ý' : 'AI Suggestions'"></span></span>
+                            <span x-show="$store.workout.isSuggesting" class="spinner spinner--sm"></span>
+                        </button>
+                        <button class="btn btn-secondary" @click="$store.workout.exerciseSearchOpen = true" x-text="lang === 'vi' ? 'Thêm bài tập' : 'Add Exercise'"></button>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Session Exercises Accordion list -->
+        <div class="flex flex-column" style="gap: var(--space-md);" x-show="!$store.workout.loading">
+            <template x-for="(item, index) in $store.workout.sessionExercises" :key="item.exercise.id">
+                <div class="exercise-log-box" :class="$store.workout.activeExerciseId === item.exercise.id ? 'exercise-log-box--active' : ''">
+                    
+                    <!-- Accordion Header -->
+                    <div class="exercise-log-box__header" @click="$store.workout.activeExerciseId = ($store.workout.activeExerciseId === item.exercise.id ? null : item.exercise.id)">
+                        <div class="exercise-log-box__title">
+                            <button class="btn" style="min-height: auto; width: 36px; height: 36px; padding: 0; border-radius: var(--radius-round);"
+                                    :class="item.is_completed ? 'btn-success' : 'btn-secondary'"
+                                    @click.stop="$store.workout.toggleComplete(item)">
+                                <span x-show="item.is_completed">✓</span>
+                                <span x-show="!item.is_completed">○</span>
+                            </button>
+                            <div>
+                                <h3 x-text="lang === 'vi' ? (item.exercise.name_vie || item.exercise.name_eng) : item.exercise.name_eng" style="font-weight: 700;"></h3>
+                                <span class="text-secondary" style="font-size: var(--font-xs);" x-text="lang === 'vi' ? item.exercise.name_eng : (item.exercise.name_vie || '')"></span>
+                            </div>
+                        </div>
+                        <div class="flex align-center gap-sm">
+                            <span class="badge" :class="item.isLogged ? 'badge-accent' : 'badge-muted'" x-text="item.isLogged ? 'Logged' : 'Pending'"></span>
+                            <span x-show="!item.isRecommended" class="badge badge-warning" style="font-size: 8px;">Extra</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                 :style="$store.workout.activeExerciseId === item.exercise.id ? 'transform: rotate(180deg); transition: transform 0.2s;' : 'transition: transform 0.2s;'"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Body (Only visible when expanded) -->
+                    <div class="exercise-log-box__body" x-show="$store.workout.activeExerciseId === item.exercise.id" x-collapse>
+                        
+                        <!-- Exercise Metadata Badges -->
+                        <div class="flex align-center gap-xs mb-sm flex-wrap">
+                            <template x-if="item.exercise.primary_muscle">
+                                <span class="badge badge-accent" style="font-size: 10px; text-transform: uppercase;" x-text="'Muscle: ' + item.exercise.primary_muscle"></span>
+                            </template>
+                            <template x-for="tag in item.exercise.tags || []">
+                                <span class="badge" style="font-size: 10px; opacity: 0.8;" x-text="tag.toUpperCase().replace('_', ' ')"></span>
+                            </template>
+                        </div>
+
+                        <!-- Video/GIF Tutorial & Static Image Section -->
+                        <div class="exercise-media-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-sm); margin-bottom: var(--space-md);">
+                            <!-- Static Image (if available) -->
+                            <template x-if="item.exercise.pool_image || item.exercise.image_url">
+                                <div class="media-box" style="position: relative; aspect-ratio: 1.3; background: var(--bg-glass); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center;">
+                                    <img :src="item.exercise.pool_image ? (item.exercise.pool_image.startsWith('/pool/') ? item.exercise.pool_image : '/pool/' + item.exercise.pool_image) : item.exercise.image_url" 
+                                         alt="Start Position" 
+                                         style="width: 100%; height: 100%; object-fit: contain;">
+                                    <span style="position: absolute; bottom: 4px; left: 6px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: var(--radius-xs); color: #fff; font-weight: 500; text-transform: uppercase;">Image</span>
+                                </div>
+                            </template>
+
+                            <!-- Animated GIF (if available) -->
+                            <template x-if="item.exercise.pool_gif || (item.exercise.video_url && (item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/')))">
+                                <div class="media-box" style="position: relative; aspect-ratio: 1.3; background: var(--bg-glass); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass); display: flex; align-items: center; justify-content: center;">
+                                    <img :src="item.exercise.pool_gif ? (item.exercise.pool_gif.startsWith('/pool/') ? item.exercise.pool_gif : '/pool/' + item.exercise.pool_gif) : item.exercise.video_url" 
+                                         alt="Demonstration" 
+                                         style="width: 100%; height: 100%; object-fit: contain;">
+                                    <span style="position: absolute; bottom: 4px; left: 6px; font-size: 9px; background: rgba(0,0,0,0.6); padding: 1px 4px; border-radius: var(--radius-xs); color: #fff; font-weight: 500; text-transform: uppercase;">GIF Demo</span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Standard Video Player (Embed/Direct/Link) -->
+                        <template x-if="item.exercise.video_url && !(item.exercise.video_url.endsWith('.gif') || item.exercise.video_url.includes('/pool/videos/'))">
+                            <div class="mb-md">
+                                <template x-if="getVideoEmbedUrl(item.exercise.video_url)">
+                                    <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                        <iframe :src="getVideoEmbedUrl(item.exercise.video_url)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                    </div>
+                                </template>
+                                <template x-if="isDirectVideo(item.exercise.video_url)">
+                                    <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                        <video controls :src="item.exercise.video_url" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
+                                    </div>
+                                </template>
+                                <template x-if="!getVideoEmbedUrl(item.exercise.video_url) && !isDirectVideo(item.exercise.video_url)">
+                                    <div>
+                                        <a :href="item.exercise.video_url" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Instructions and Pro Tips -->
+                        <div class="mb-md" x-show="(lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)) || (lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips))">
+                            <div class="mb-sm">
+                                <div style="font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;" x-text="lang === 'vi' ? 'Hướng dẫn thực hiện' : 'Instructions'"></div>
+                                <p class="text-secondary" style="font-size: var(--font-sm); line-height: 1.5; margin: 0;" x-text="lang === 'vi' ? (item.exercise.instructions_vi || item.exercise.instructions) : (item.exercise.instructions_en || item.exercise.instructions)"></p>
+                            </div>
+                            
+                            <template x-if="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)">
+                                <div class="mt-md" style="background: rgba(0, 212, 170, 0.06); border-left: 3px solid var(--accent-primary); padding: var(--space-xs) var(--space-sm); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: var(--font-xs); line-height: 1.4;">
+                                    <strong style="color: var(--accent-primary); display: block; margin-bottom: 2px;">💡 Pro Tip</strong>
+                                    <span class="text-secondary" x-text="lang === 'vi' ? (item.exercise.pro_tips_vi || item.exercise.pro_tips) : (item.exercise.pro_tips_en || item.exercise.pro_tips)"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Set Table -->
+                        <div class="set-rows-container">
+                            <div class="set-row font-label" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; margin-bottom: 4px;" :class="item.exercise.tracking_type === 'TIME' ? 'set-row--time' : ''">
+                                <span>Set</span>
+                                <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                    <span class="text-center">Weight</span>
+                                </template>
+                                <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                    <span class="text-center">Reps</span>
+                                </template>
+                                <template x-if="item.exercise.tracking_type === 'TIME'">
+                                    <span class="text-center">Duration</span>
+                                </template>
+                                <span></span>
+                            </div>
+
+                            <template x-for="(setRow, index) in item.tracking_data" :key="index">
+                                <div class="set-row" :class="item.exercise.tracking_type === 'TIME' ? 'set-row--time' : ''">
+                                    <!-- Set Index -->
+                                    <span class="set-row__number" x-text="setRow.set"></span>
+                                    
+                                    <!-- Metric 1: Weight -->
+                                    <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                        <div class="set-row__input-group">
+                                            <input type="number" class="set-row__input" x-model="setRow.kg" placeholder="0" step="any" min="0">
+                                            <span class="set-row__unit">kg</span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Metric 2: Reps -->
+                                    <template x-if="item.exercise.tracking_type !== 'TIME'">
+                                        <div class="set-row__input-group">
+                                            <input type="number" class="set-row__input" x-model="setRow.rep" placeholder="0" min="0">
+                                            <span class="set-row__unit">rep</span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Metric 3: Time (seconds) -->
+                                    <template x-if="item.exercise.tracking_type === 'TIME'">
+                                        <div class="set-row__input-group">
+                                            <input type="number" class="set-row__input" x-model="setRow.time_seconds" placeholder="0" min="0">
+                                            <span class="set-row__unit">sec</span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Delete Set Row -->
+                                    <button class="btn btn-secondary" style="min-height: auto; width: 36px; height: 36px; padding:0; border-radius: var(--radius-round);"
+                                            @click="$store.workout.removeSet(item, index)">
+                                        ✕
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Set Actions -->
+                        <div class="flex gap-sm mb-lg">
+                            <button class="btn btn-secondary flex-1" @click="$store.workout.addSet(item)">+ Add Set</button>
+                        </div>
+
+                        <!-- Bottom Save Action Controls -->
+                         <div class="flex gap-sm align-center">
+                             <button class="btn btn-primary flex-1 btn-gym" @click="$store.workout.saveLog(item)" x-text="lang === 'vi' ? 'Lưu Hiệp Tập' : 'Save Log'"></button>
+                             
+                             <!-- Reorder Buttons -->
+                             <button class="btn btn-secondary btn-icon" style="width: 44px; height: 44px; flex-shrink: 0;" @click="$store.workout.moveExercise(item, -1)" :disabled="index === 0" title="Move Up">▲</button>
+                             <button class="btn btn-secondary btn-icon" style="width: 44px; height: 44px; flex-shrink: 0;" @click="$store.workout.moveExercise(item, 1)" :disabled="index === $store.workout.sessionExercises.length - 1" title="Move Down">▼</button>
+                             
+                             <button class="btn btn-secondary btn-gym" style="flex: 0 0 56px;" @click="$store.workout.openSwapModal(item)" title="Swap Exercise">🔄</button>
+                             <button class="btn btn-danger btn-gym" style="flex: 0 0 56px;" @click="$store.workout.removeSessionExercise(item)" title="Remove Exercise">✕</button>
+                         </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- Autocomplete trigger to log additional exercise -->
+        <div class="card mt-lg" style="position: relative;" x-show="!$store.workout.loading">
+            <div class="flex justify-between align-center">
+                <h3>Add Extra Exercise</h3>
+                <button class="btn btn-secondary" @click="$store.workout.exerciseSearchOpen = !$store.workout.exerciseSearchOpen">
+                    <span x-text="$store.workout.exerciseSearchOpen ? 'Close' : 'Search'"></span>
+                </button>
+            </div>
+            
+            <div x-show="$store.workout.exerciseSearchOpen" class="mt-md" style="position: relative;">
+                <input type="text" class="form-control" placeholder="Type exercise name..." x-model="$store.workout.exerciseSearchQuery">
+                
+                <!-- Search Autocomplete Dropdown list -->
+                <div x-show="$store.workout.searchFilteredExercises.length > 0" class="card" style="position: absolute; width:100%; top: 60px; z-index: 50; background: var(--bg-secondary); border-color: var(--accent-primary);">
+                    <div class="flex flex-column" style="gap: var(--space-xs);">
+                        <template x-for="ex in $store.workout.searchFilteredExercises" :key="ex.id">
+                            <div class="flex justify-between align-center p-sm cursor-pointer" style="border-radius: var(--radius-sm); padding: 10px;"
+                                 @click="$store.workout.addCustomExercise(ex)"
+                                 onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                                 onmouseout="this.style.background='none'">
+                                <div>
+                                    <div x-text="lang === 'vi' ? (ex.name_vie || ex.name_eng) : ex.name_eng" style="font-weight: 600;"></div>
+                                    <span class="text-secondary" style="font-size: var(--font-xs);" x-text="ex.primary_muscle"></span>
+                                </div>
+                                <span class="badge badge-accent">+ Add</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div x-show="$store.workout.exerciseSearchQuery && $store.workout.searchFilteredExercises.length === 0" class="text-secondary text-center mt-sm">No exercises available to add.</div>
+            </div>
+        </div>
+    </div>
+</section>
