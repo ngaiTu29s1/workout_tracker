@@ -40,7 +40,7 @@ services:
       - ./backend:/app/backend         # Mount backend for dev (hot-reload)
       - ./frontend:/app/frontend       # Mount frontend for dev
       - ./data/exercise-pool:/app/static/pool
-    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: sh -c "alembic -c backend/alembic.ini upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload"
 
 volumes:
   postgres_data:

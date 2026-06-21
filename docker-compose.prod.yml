@@ -37,8 +37,7 @@ services:
       # Only mount the persistent pool data (enrichment cache, pool images/gifs)
       # No local backend/frontend directory mounts in production
       - ./data/exercise-pool:/app/static/pool
-    # Runs uvicorn without --reload and with multiple workers for concurrency
-    command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    command: sh -c "alembic -c backend/alembic.ini upgrade head && uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 4"
 
 volumes:
   postgres_data:

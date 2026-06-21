@@ -39,12 +39,4 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 # Database initialization function
 async def init_db() -> None:
-    # Import all models here so they register on Base.metadata
-    from backend.app.models.exercise import ExerciseMaster
-    from backend.app.models.preset import WeeklyPreset, DailyOverride
-    from backend.app.models.workout_log import DailyWorkoutLog
-    from backend.app.models.stats import WorkoutAggregatedStats
-
-    async with engine.begin() as conn:
-        # Create all tables if they do not exist
-        await conn.run_sync(Base.metadata.create_all)
+    pass
