@@ -82,7 +82,11 @@
             </template>
             <template x-if="$store.workout.routineTag && $store.workout.routineTag.toLowerCase() !== 'rest'">
                 <div>
-                    <p class="text-secondary mb-md" x-html="lang === 'vi' ? 'Hôm nay bạn tập <strong>' + $store.workout.routineTag.toUpperCase().replace('_', ' ') + '</strong>. Chưa có bài tập nào được lên lịch.' : 'Today you train <strong>' + $store.workout.routineTag.toUpperCase().replace('_', ' ') + '</strong>. No exercises scheduled yet.'"></p>
+                    <p class="text-secondary mb-md">
+                        <span x-text="lang === 'vi' ? 'Hôm nay bạn tập ' : 'Today you train '"></span>
+                        <strong x-text="($store.workout.routineTag || '').toUpperCase().replace('_', ' ')"></strong>
+                        <span x-text="lang === 'vi' ? '. Chưa có bài tập nào được lên lịch.' : '. No exercises scheduled yet.'"></span>
+                    </p>
                     <div class="flex gap-sm justify-center flex-wrap">
                         <button class="btn btn-primary" @click="$store.workout.fetchLocalSuggestions()" :disabled="$store.workout.isSuggesting">
                             <span x-show="!$store.workout.isSuggesting">⚙️ <span x-text="lang === 'vi' ? 'Tự lên lịch' : 'Local Fill'"></span></span>

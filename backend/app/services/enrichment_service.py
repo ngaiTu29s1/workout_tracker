@@ -8,31 +8,13 @@ from sqlalchemy.orm import joinedload
 
 from backend.app.config import settings
 from backend.app.models.exercise import ExerciseMaster
+from backend.app.models.enrichment_cache import EnrichmentCache
 
 logger = logging.getLogger(__name__)
-
-CACHE_PATH = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
 
 class EnrichmentService:
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    def _load_cache(self) -> dict:
-        try:
-            if os.path.exists(CACHE_PATH):
-                with open(CACHE_PATH, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"Failed to load enrichment cache: {e}")
-        return {}
-
-    def _save_cache(self, cache_data: dict) -> None:
-        try:
-            os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
-            with open(CACHE_PATH, "w", encoding="utf-8") as f:
-                json.dump(cache_data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.warning(f"Failed to save enrichment cache: {e}")
 
     def _resolve_bilingual_field(
         self,
@@ -71,7 +53,7 @@ class EnrichmentService:
     async def enrich_exercise(self, exercise_id: int) -> ExerciseMaster:
         """
         Trigger AI enrichment via n8n webhook.
-        Uses a local JSON cache to store translation metadata to optimize token usage.
+        Uses EnrichmentCache in Postgres to store translation metadata to optimize token usage.
         If n8n is unconfigured or returns an error, falls back to a smart mock.
         """
         # Fetch exercise with eager loaded pool relation to prevent MissingGreenlet errors during Pydantic validation
@@ -82,13 +64,33 @@ class EnrichmentService:
         if not exercise:
             raise ValueError(f"Exercise with ID {exercise_id} not found.")
 
-        # Check in persistent cache first using lowercased English name
+        # Check in persistent database cache first using lowercased English name
         cache_key = exercise.name_eng.strip().lower()
-        cache = self._load_cache()
-        enriched_data = None
+        cache_entry = await self.db.scalar(
+            select(EnrichmentCache).where(EnrichmentCache.key == cache_key)
+        )
+        if cache_entry:
+            enriched_data = cache_entry.data
+        else:
+            enriched_data = None
+            # Fallback to json file if not in DB yet
+            import os
+            import json
+            cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
+            if os.path.exists(cache_path):
+                try:
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        cache = json.load(f)
+                        if cache_key in cache:
+                            enriched_data = cache[cache_key]
+                            # Persist to database so it is cached in DB
+                            new_entry = EnrichmentCache(key=cache_key, data=enriched_data)
+                            self.db.add(new_entry)
+                            await self.db.commit()
+                except Exception:
+                    pass
 
-        if cache_key in cache:
-            enriched_data = cache[cache_key]
+        if enriched_data:
             logger.info(f"Using cached AI enrichment for: {exercise.name_eng}")
         else:
             # Send exercise ID and English name directly to the n8n webhook.
@@ -117,8 +119,15 @@ class EnrichmentService:
                             
                             # Cache successful translation metadata
                             if enriched_data and "name_vie" in enriched_data:
-                                cache[cache_key] = enriched_data
-                                self._save_cache(cache)
+                                cache_entry = await self.db.scalar(
+                                    select(EnrichmentCache).where(EnrichmentCache.key == cache_key)
+                                )
+                                if cache_entry:
+                                    cache_entry.data = enriched_data
+                                else:
+                                    cache_entry = EnrichmentCache(key=cache_key, data=enriched_data)
+                                    self.db.add(cache_entry)
+                                await self.db.commit()
                                 logger.info(f"Successfully cached enriched metadata from n8n for: {exercise.name_eng}")
                         else:
                             logger.warning(f"n8n returned status code {response.status_code}. Using mock fallback.")

@@ -169,18 +169,32 @@ class PoolService:
             ex_service = ExerciseService(self.db)
             return await ex_service.get_exercise(existing.id)
 
-        # Check in enrichment_cache.json for cache match
-        cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
-        cache_data = None
-        if os.path.exists(cache_path):
-            try:
-                with open(cache_path, "r", encoding="utf-8") as f:
-                    cache = json.load(f)
-                    cache_key = pool_ex.name.strip().lower()
-                    if cache_key in cache:
-                        cache_data = cache[cache_key]
-            except Exception:
-                pass
+        # Check in enrichment_cache database table for cache match
+        from backend.app.models.enrichment_cache import EnrichmentCache
+        cache_key = pool_ex.name.strip().lower()
+        cache_entry = await self.db.scalar(
+            select(EnrichmentCache).where(EnrichmentCache.key == cache_key)
+        )
+        if cache_entry:
+            cache_data = cache_entry.data
+        else:
+            cache_data = None
+            # Fallback to json file if not in DB yet
+            import os
+            import json
+            cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
+            if os.path.exists(cache_path):
+                try:
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        cache = json.load(f)
+                        if cache_key in cache:
+                            cache_data = cache[cache_key]
+                            # Persist to database so it is cached in DB
+                            new_entry = EnrichmentCache(key=cache_key, data=cache_data)
+                            self.db.add(new_entry)
+                            await self.db.commit()
+                except Exception:
+                    pass
 
         # 3. Create ExerciseMaster
         instructions_en = pool_ex.instructions_en

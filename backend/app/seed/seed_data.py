@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from backend.app.models.pool import ExercisePool
 from backend.app.models.exercise import ExerciseMaster
 from backend.app.models.preset import WeeklyPreset
+from backend.app.models.enrichment_cache import EnrichmentCache
 from backend.app.services.exercise_service import title_case_name
 from backend.app.services.pool_service import infer_tracking_type
 
@@ -477,26 +478,55 @@ async def seed_weekly_presets(db: AsyncSession) -> None:
     else:
         logger.info("Weekly presets already exist. Skipping preset seeding.")
 
-async def auto_apply_cache(db: AsyncSession) -> None:
-    """
-    Read enrichment_cache.json if it exists.
-    1. For existing exercises in the database, if they have cached data, update their fields.
-    2. For cached exercises that do not exist in the database (e.g. custom user exercises),
-       automatically recreate them in the database.
-    """
+async def seed_enrichment_cache(db: AsyncSession) -> None:
+    """Populate enrichment_cache table from JSON if the table is empty."""
+    cache_count = await db.scalar(select(func.count()).select_from(EnrichmentCache))
+    if cache_count > 0:
+        logger.info("Enrichment cache table already populated. Skipping seeding.")
+        return
+
     cache_path = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
     if not os.path.exists(cache_path):
-        logger.info("No enrichment cache file found to auto-apply.")
+        logger.info("No enrichment_cache.json file found to seed database cache.")
         return
 
     try:
         with open(cache_path, "r", encoding="utf-8") as f:
             cache = json.load(f)
     except Exception as e:
-        logger.warning(f"Failed to load cache in auto-apply: {e}")
+        logger.warning(f"Failed to load cache in seed_enrichment_cache: {e}")
         return
 
     if not cache:
+        return
+
+    logger.info(f"Seeding enrichment cache table with {len(cache)} entries...")
+    for key, val in cache.items():
+        db_cache = EnrichmentCache(key=key, data=val)
+        db.add(db_cache)
+    await db.commit()
+    logger.info("Successfully seeded enrichment cache table.")
+
+async def auto_apply_cache(db: AsyncSession) -> None:
+    """
+    Read enrichment cache from database.
+    1. For existing exercises in the database, if they have cached data, update their fields.
+    2. For cached exercises that do not exist in the database (e.g. custom user exercises),
+       automatically recreate them in the database.
+    """
+    # Seed cache table from json if table is empty (e.g. during test runs or initial seeding)
+    await seed_enrichment_cache(db)
+
+    try:
+        result = await db.execute(select(EnrichmentCache))
+        cache_entries = result.scalars().all()
+        cache = {entry.key: entry.data for entry in cache_entries}
+    except Exception as e:
+        logger.warning(f"Failed to load database cache in auto-apply: {e}")
+        return
+
+    if not cache:
+        logger.info("No cache entries in database to auto-apply.")
         return
 
     logger.info(f"Auto-applying cache for {len(cache)} entries...")
@@ -642,4 +672,5 @@ async def seed_db(db: AsyncSession) -> None:
     await seed_pool(db)
     await seed_personal_defaults(db)
     await seed_weekly_presets(db)
+    await seed_enrichment_cache(db)
     await auto_apply_cache(db)
