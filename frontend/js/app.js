@@ -1,9 +1,9 @@
 // Import stores to execute and register them with Alpine
-import './stores/exercise-store.js?v=3';
-import './stores/calendar-store.js?v=3';
-import './stores/workout-store.js?v=3';
-import './stores/stats-store.js?v=3';
-import './stores/pool-store.js?v=3';
+import './stores/exercise-store.js?v=4';
+import './stores/calendar-store.js?v=4';
+import './stores/workout-store.js?v=4';
+import './stores/stats-store.js?v=4';
+import './stores/pool-store.js?v=4';
 
 document.addEventListener('alpine:init', () => {
   // Custom Confirm Dialog Store
