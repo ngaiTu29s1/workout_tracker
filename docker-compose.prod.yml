@@ -1,5 +1,5 @@
 services:
-  db:
+  fitness-db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -17,7 +17,7 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  fitness-backend:
     # Uses the pre-built Docker image pushed to Docker Hub by GitHub Actions
     image: ${DOCKER_IMAGE}
     restart: unless-stopped
@@ -26,12 +26,12 @@ services:
     #   # from any device in your Tailnet via http://<server-tailscale-ip>:8000
     #   - "8000:8000"
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fitness-db:5432/${POSTGRES_DB}
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
       N8N_AUTOFILL_WEBHOOK_URL: ${N8N_AUTOFILL_WEBHOOK_URL}
       POOL_DATA_PATH: /app/static/pool
     depends_on:
-      db:
+      fitness-db:
         condition: service_healthy
     volumes:
       # Only mount the persistent pool data (enrichment cache, pool images/gifs)
@@ -46,4 +46,5 @@ volumes:
 networks:
   default:
     name: fitness_net
+
 
