@@ -18,6 +18,64 @@ def infer_tracking_type(equipment: Optional[str], category: Optional[str]) -> st
     else:
         return "WEIGHT_REPS"
 
+import re
+
+def remove_vietnamese_tones(s: str) -> str:
+    if not s:
+        return ""
+    # Map of accented characters
+    s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
+    s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
+    s = re.sub(r'[ìíịỉĩ]', 'i', s)
+    s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡ]', 'o', s)
+    s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
+    s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
+    s = re.sub(r'[đ]', 'd', s)
+    s = re.sub(r'[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'A', s)
+    s = re.sub(r'[ÈÉẸẺẼÊỀẾỆỂỄ]', 'E', s)
+    s = re.sub(r'[ÌÍỊỈĨ]', 'I', s)
+    s = re.sub(r'[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]', 'O', s)
+    s = re.sub(r'[ÙÚỤỦŨƯỪỨỰỬỮ]', 'U', s)
+    s = re.sub(r'[ỲÝỴỶỸ]', 'Y', s)
+    s = re.sub(r'[Đ]', 'D', s)
+    return s
+
+VIETNAMESE_SEARCH_MAPPING = {
+    "day nguc": ["bench press", "chest press", "chest fly", "pushdown", "push-up", "dip"],
+    "day nguc ngang": ["bench press"],
+    "day nguc tren": ["incline press"],
+    "day nguc duoi": ["decline press"],
+    "day vai": ["overhead press", "shoulder press", "military press", "lateral raise", "front raise"],
+    "tay sau": ["tricep"],
+    "tay truoc": ["bicep", "curl"],
+    "cuon tay truoc": ["bicep curl"],
+    "keo cap": ["cable pull", "cable row", "cable pushdown", "lat pulldown"],
+    "keo xa": ["pull up", "pull-up", "chin up", "lat pulldown"],
+    "xa don": ["pull-up", "chin-up"],
+    "xa kep": ["dip"],
+    "chong day": ["push-up", "pushup"],
+    "hit dat": ["push-up", "pushup"],
+    "ganh ta": ["squat"],
+    "ganh ta don": ["barbell squat"],
+    "dap dui": ["leg press"],
+    "da dui": ["leg extension"],
+    "moc dui": ["leg curl"],
+    "dui sau": ["hamstring", "deadlift", "leg curl"],
+    "dui truoc": ["quadricep", "leg extension", "squat"],
+    "bap chuoi": ["calf", "calf raise"],
+    "nhon got": ["calf raise"],
+    "gap bung": ["crunch", "sit-up", "leg raise", "plank"],
+    "bung": ["abs", "abdominal", "crunch", "plank"],
+    "chay bo": ["treadmill", "run"],
+    "dap xe": ["bike", "cycle", "bicycle"],
+    "cheo thuyen": ["row", "rowing"],
+    "lung": ["back", "row", "lat pulldown", "deadlift"],
+    "xo": ["lat", "pulldown", "pull-up", "row"],
+    "vai": ["shoulder", "delt", "press", "lateral raise"],
+    "nguc": ["chest", "press", "fly", "bench press"],
+    "mong": ["glute", "hip thrust"],
+}
+
 class PoolService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -29,11 +87,46 @@ class PoolService:
             res = await self.db.execute(stmt)
             return list(res.scalars().all())
 
-        # Tách query thành words, join bằng %
-        # VD: "bench press" -> "%bench%press%"
+        from sqlalchemy import or_
+        
+        # 1. Clean query
+        cleaned_query = remove_vietnamese_tones(query).strip().lower()
+        
+        # 2. Query expansion based on Vietnamese keywords
+        expanded_terms = []
+        for vi_key, en_terms in VIETNAMESE_SEARCH_MAPPING.items():
+            if vi_key in cleaned_query:
+                expanded_terms.extend(en_terms)
+        
+        # Remove duplicates
+        seen = set()
+        expanded_terms = [x for x in expanded_terms if not (x in seen or seen.add(x))]
+        
+        # 3. Build conditions
+        conditions = []
+        
+        # Match original query words
         words = query.strip().split()
         pattern = "%" + "%".join(words) + "%"
-        stmt = select(ExercisePool).where(ExercisePool.name.ilike(pattern)).limit(limit)
+        conditions.append(ExercisePool.name.ilike(pattern))
+        conditions.append(ExercisePool.instructions_vi.ilike(pattern))
+        conditions.append(ExercisePool.target.ilike(pattern))
+        conditions.append(ExercisePool.equipment.ilike(pattern))
+        
+        # Match cleaned query words
+        cleaned_words = cleaned_query.split()
+        cleaned_pattern = "%" + "%".join(cleaned_words) + "%"
+        if cleaned_pattern != pattern:
+            conditions.append(ExercisePool.name.ilike(cleaned_pattern))
+            conditions.append(ExercisePool.target.ilike(cleaned_pattern))
+            conditions.append(ExercisePool.equipment.ilike(cleaned_pattern))
+            
+        # Add expanded English terms
+        for term in expanded_terms:
+            term_pattern = f"%{term}%"
+            conditions.append(ExercisePool.name.ilike(term_pattern))
+            
+        stmt = select(ExercisePool).where(or_(*conditions)).limit(limit)
         res = await self.db.execute(stmt)
         return list(res.scalars().all())
 

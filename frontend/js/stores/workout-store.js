@@ -306,15 +306,15 @@ document.addEventListener('alpine:init', () => {
       const exerciseStore = Alpine.store('exercises');
       if (!this.exerciseSearchQuery) return [];
       
-      const q = this.exerciseSearchQuery.toLowerCase();
+      const q = window.removeVietnameseTones(this.exerciseSearchQuery.toLowerCase()).trim();
       // Filter out exercises already in today's list
       return exerciseStore.items.filter(ex => {
         const alreadyAdded = this.sessionExercises.some(item => item.exercise.id === ex.id);
         if (alreadyAdded) return false;
         
-        return ex.name_eng.toLowerCase().includes(q) || 
-          (ex.name_vie && ex.name_vie.toLowerCase().includes(q)) ||
-          (ex.primary_muscle && ex.primary_muscle.toLowerCase().includes(q));
+        return window.removeVietnameseTones(ex.name_eng.toLowerCase()).includes(q) || 
+          (ex.name_vie && window.removeVietnameseTones(ex.name_vie.toLowerCase()).includes(q)) ||
+          (ex.primary_muscle && window.removeVietnameseTones(ex.primary_muscle.toLowerCase()).includes(q));
       }).slice(0, 5);
     },
 
@@ -344,10 +344,11 @@ document.addEventListener('alpine:init', () => {
       });
 
       if (this.swapSearchQuery) {
-        const q = this.swapSearchQuery.toLowerCase();
+        const q = window.removeVietnameseTones(this.swapSearchQuery.toLowerCase()).trim();
         list = list.filter(ex => {
-          const nameMatch = (ex.name_eng || '').toLowerCase().includes(q) || (ex.name_vie || '').toLowerCase().includes(q);
-          const muscleMatch = (ex.primary_muscle || '').toLowerCase().includes(q);
+          const nameMatch = window.removeVietnameseTones((ex.name_eng || '').toLowerCase()).includes(q) || 
+                            (ex.name_vie && window.removeVietnameseTones((ex.name_vie || '').toLowerCase()).includes(q));
+          const muscleMatch = window.removeVietnameseTones((ex.primary_muscle || '').toLowerCase()).includes(q);
           return nameMatch || muscleMatch;
         });
       }

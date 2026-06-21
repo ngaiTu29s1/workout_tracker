@@ -50,6 +50,18 @@ async def test_pool_search(client: AsyncClient, db_session: AsyncSession):
     assert response.status_code == 200
     assert len(response.json()["data"]) == 1
 
+    # Search query "đẩy ngực" (with accents) - should map to "bench press" and find Barbell Bench Press
+    response_vi = await client.get("/api/pool/search?q=%C4%91%E1%BB%83y%20ng%E1%BB%B1c")
+    assert response_vi.status_code == 200
+    assert len(response_vi.json()["data"]) == 1
+    assert response_vi.json()["data"][0]["name"] == "Barbell Bench Press"
+
+    # Search query "day nguc" (without accents)
+    response_vi_clean = await client.get("/api/pool/search?q=day+nguc")
+    assert response_vi_clean.status_code == 200
+    assert len(response_vi_clean.json()["data"]) == 1
+    assert response_vi_clean.json()["data"][0]["name"] == "Barbell Bench Press"
+
 @pytest.mark.asyncio
 async def test_pool_detail(client: AsyncClient, db_session: AsyncSession):
     p1 = ExercisePool(
