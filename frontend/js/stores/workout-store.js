@@ -272,7 +272,7 @@ document.addEventListener('alpine:init', () => {
 
     async deleteLog(sessionItem) {
       if (!sessionItem.logId) return;
-      if (!confirm('Are you sure you want to clear this log?')) return;
+      if (!(await window.customConfirm('Are you sure you want to clear this log?'))) return;
       
       try {
         await api.delete(`/workouts/${sessionItem.logId}`);
@@ -380,7 +380,7 @@ document.addEventListener('alpine:init', () => {
         const confirmMsg = lang === 'vi' 
           ? 'Đổi bài tập sẽ xóa dữ liệu đã lưu hôm nay của bài này. Bạn có chắc muốn đổi?' 
           : 'Swapping this exercise will clear today\'s saved logs for it. Are you sure?';
-        if (!confirm(confirmMsg)) return;
+        if (!(await window.customConfirm(confirmMsg))) return;
       }
 
       this.loading = true;
@@ -633,7 +633,7 @@ document.addEventListener('alpine:init', () => {
         const confirmMsg = lang === 'vi' 
           ? 'Đổi bài tập sẽ xóa dữ liệu đã lưu hôm nay của bài này. Bạn có chắc muốn đổi?' 
           : 'Swapping this exercise will clear today\'s saved logs for it. Are you sure?';
-        if (!confirm(confirmMsg)) return;
+        if (!(await window.customConfirm(confirmMsg))) return;
       }
       
       this.loading = true;
@@ -702,7 +702,7 @@ document.addEventListener('alpine:init', () => {
         const confirmMsg = lang === 'vi' 
           ? 'Bạn có chắc chắn muốn xóa bài tập này khỏi buổi tập hôm nay? Lịch sử hiệp tập đã lưu của bài này sẽ bị xóa.' 
           : 'Are you sure you want to remove this exercise from today\'s session? Its saved logs will be deleted.';
-        if (!confirm(confirmMsg)) return;
+        if (!(await window.customConfirm(confirmMsg))) return;
         
         try {
           await api.delete(`/workouts/${sessionItem.logId}`);

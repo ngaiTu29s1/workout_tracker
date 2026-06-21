@@ -205,8 +205,8 @@ document.addEventListener('alpine:init', () => {
     },
 
     async deleteExercise(id) {
-      if (!confirm('Are you sure you want to delete this exercise? This will delete all logged data for it.')) {
-        return;
+      if (!(await window.customConfirm('Are you sure you want to delete this exercise? This will delete all logged data for it.'))) {
+        return false;
       }
       try {
         await api.delete(`/exercises/${id}`);
@@ -218,10 +218,12 @@ document.addEventListener('alpine:init', () => {
         
         // Refresh active views
         Alpine.store('workout').refreshTodaySession();
+        return true;
       } catch (err) {
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: err.message || 'Failed to delete exercise', type: 'error' }
         }));
+        return false;
       }
     },
 

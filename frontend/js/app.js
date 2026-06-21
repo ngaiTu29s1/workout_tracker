@@ -6,6 +6,43 @@ import './stores/stats-store.js?v=3';
 import './stores/pool-store.js?v=3';
 
 document.addEventListener('alpine:init', () => {
+  // Custom Confirm Dialog Store
+  Alpine.store('confirm', {
+    open: false,
+    title: '',
+    message: '',
+    resolve: null,
+    
+    show(message, title = '') {
+      this.message = message;
+      let isEn = false;
+      try {
+        isEn = document.querySelector('[x-data="app"]').__x.$data.lang === 'en';
+      } catch(e) {
+        isEn = false;
+      }
+      this.title = title || (isEn ? 'Confirm' : 'Xác nhận');
+      this.open = true;
+      return new Promise((resolve) => {
+        this.resolve = resolve;
+      });
+    },
+    
+    yes() {
+      this.open = false;
+      if (this.resolve) this.resolve(true);
+    },
+    
+    no() {
+      this.open = false;
+      if (this.resolve) this.resolve(false);
+    }
+  });
+
+  window.customConfirm = (message, title = '') => {
+    return Alpine.store('confirm').show(message, title);
+  };
+
   // Main app controller
   Alpine.data('app', () => ({
     activeView: 'session',
