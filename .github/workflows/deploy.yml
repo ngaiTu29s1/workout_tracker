@@ -4,11 +4,22 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'Dockerfile'
+      - 'docker-compose*'
+      - '.github/workflows/deploy.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Run Automated Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       POSTGRES_USER: fitness
       POSTGRES_PASSWORD: test_db_password_123
@@ -25,11 +36,21 @@ jobs:
           # Boot up services via dev compose
           docker compose up --build -d db backend
           
-          # Wait for PostgreSQL container health check to succeed
+          # Wait for PostgreSQL container health check to succeed (max 30s)
           echo "Waiting for database to be ready..."
-          until [ "$(docker inspect -f '{{.State.Health.Status}}' $(docker compose ps -q db))" = "healthy" ]; do
+          TIMEOUT=30
+          while [ "$TIMEOUT" -gt 0 ]; do
+            STATUS=$(docker inspect -f '{{.State.Health.Status}}' $(docker compose ps -q db) 2>/dev/null || echo "unhealthy")
+            if [ "$STATUS" = "healthy" ]; then
+              break
+            fi
             sleep 1
+            TIMEOUT=$((TIMEOUT - 1))
           done
+          if [ "$TIMEOUT" -eq 0 ]; then
+            echo "Database failed to become ready in time"
+            exit 1
+          fi
           
           # Execute test suite inside the backend container
           docker compose exec -T backend sh -c "env PYTHONPATH=. pytest backend/tests/ -v"
@@ -41,6 +62,7 @@ jobs:
     name: Build & Push to Docker Hub
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,6 +106,7 @@ jobs:
     name: Trigger n8n Deployment Webhook
     needs: build-and-push
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Send POST request to n8n
         run: |
