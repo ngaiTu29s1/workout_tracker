@@ -99,5 +99,5 @@ async def client() -> AsyncClient:
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        ac.headers.update({"X-API-Key": settings.API_SECRET_KEY})
+        ac.headers.update({"X-API-Key": settings.FITNESS_OS_API_KEY})
         yield ac
