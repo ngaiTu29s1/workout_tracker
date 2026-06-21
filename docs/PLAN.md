@@ -38,7 +38,7 @@ Tôi sẽ tạo backend endpoint `POST /api/exercises/{id}/enrich` gọi tới n
 ### Project Structure
 
 ```
-workout_checker/
+fitness-os/
 ├── docker-compose.yml
 ├── .env.example
 ├── .env

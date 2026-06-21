@@ -11,7 +11,7 @@
 - **Project**: Fitness OS — Workout Tracker & Planner
 - **Type**: Mobile-first Web App (PWA-ready)
 - **Style**: Vibe-coded, multi-agent development
-- **Repo**: `workout_checker/`
+- **Repo**: `fitness-os/`
 
 ---
 
@@ -37,7 +37,7 @@
 ## 📂 Project Structure
 
 ```
-workout_checker/
+fitness-os/
 ├── docs/AGENTS.md               # ← BẠN ĐANG ĐỌC FILE NÀY
 ├── docs/PLAN.md                 # Implementation plan chi tiết
 ├── docs/instruct.md             # Đặc tả gốc từ product owner
