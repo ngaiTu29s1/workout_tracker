@@ -575,6 +575,7 @@ async def auto_apply_cache(db: AsyncSession) -> None:
                 # Write back instructions_vi to pool if pool is linked and pool.instructions_vi is empty
                 if exercise.pool and exercise.instructions_vi:
                     exercise.pool.instructions_vi = exercise.pool.instructions_vi or exercise.instructions_vi
+                    db.add(exercise.pool)
                 db.add(exercise)
         else:
             # 2. Re-create missing cached exercise
@@ -630,6 +631,7 @@ async def auto_apply_cache(db: AsyncSession) -> None:
             # Write back instructions_vi to pool if pool is linked and pool.instructions_vi is empty
             if pool_ex and instr_vi:
                 pool_ex.instructions_vi = pool_ex.instructions_vi or instr_vi
+                db.add(pool_ex)
             db.add(new_ex)
 
     await db.commit()

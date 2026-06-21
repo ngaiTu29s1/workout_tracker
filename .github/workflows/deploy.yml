@@ -9,14 +9,19 @@ jobs:
   test:
     name: Run Automated Tests
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: test_db_password_123
+      POSTGRES_DB: fitness_os
+      N8N_WEBHOOK_URL: http://n8n.local:5678/webhooks/enrich
+      N8N_AUTOFILL_WEBHOOK_URL: http://n8n.local:5678/webhooks/autofill
+      APP_PORT: 8000
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Start services and run pytest
         run: |
-          # Copy default env configuration for Docker Compose variables
-          cp .env.example .env
           # Boot up services via dev compose
           docker compose up --build -d db backend
           
