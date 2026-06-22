@@ -28,11 +28,41 @@ A premium, mobile-first Web App designed for seamless workout planning and track
 
 ## 🚀 Spin it up in 1 Command
 
-Start the entire stack (PostgreSQL + FastAPI + Frontend SPA) in development mode:
+1. **Configure Environment**:
+   Copy `.env.example` to `.env` and configure your settings.
+   
+2. **Generate API Key**:
+   Fitness OS features a secure API Key authentication layer. Generate a secure random token and write it to `.env`:
+   ```bash
+   sed -i '/API_SECRET_KEY/d; /FITNESS_OS_API_KEY/d' .env && echo "FITNESS_OS_API_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+   ```
+   *Note: On your first visit, the frontend will prompt you once to enter this API Key and will store it in `localStorage` for all future requests.*
 
-```bash
-docker compose up --build
-```
+3. **Start the Stack**:
+   Start the entire stack (PostgreSQL + FastAPI + Frontend SPA) in development mode. Alembic database migrations will apply automatically on startup:
+   ```bash
+   docker compose up --build
+   ```
 
 Access the app at: **[http://localhost:8000](http://localhost:8000)**  
 Interactive Swagger API docs: **[http://localhost:8000/docs](http://localhost:8000/docs)**
+
+---
+
+## ⚙️ Configuration & Migrations
+
+### Database Migrations (Alembic)
+Schema modifications are managed via Alembic. Although migrations run automatically on service start, you can manually run them:
+```bash
+docker compose exec fitness-backend alembic upgrade head
+```
+To generate a new migration after editing SQLAlchemy models:
+```bash
+docker compose exec fitness-backend alembic revision --autogenerate -m "description_of_changes"
+```
+
+### Running Tests
+Execute the pytest suite within the backend container:
+```bash
+docker compose exec fitness-backend env PYTHONPATH=. pytest backend/tests/ -v
+```
