@@ -2,23 +2,7 @@
 
 const API_BASE = '/api';
 
-function getApiKey() {
-  let key = localStorage.getItem('FITNESS_OS_API_KEY');
-  if (!key) {
-    key = prompt('Please enter your API Key to access Fitness OS:');
-    if (key) {
-      localStorage.setItem('FITNESS_OS_API_KEY', key);
-    }
-  }
-  return key || '';
-}
-
 async function handleResponse(res) {
-  if (res.status === 401) {
-    localStorage.removeItem('FITNESS_OS_API_KEY');
-    window.location.reload();
-    throw new Error('Unauthorized');
-  }
   if (!res.ok) {
     let errorDetail = 'An error occurred';
     try {
@@ -42,11 +26,7 @@ async function handleResponse(res) {
 
 export const api = {
   async get(path) {
-    const res = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        'X-API-Key': getApiKey()
-      }
-    });
+    const res = await fetch(`${API_BASE}${path}`);
     return handleResponse(res);
   },
 
@@ -54,8 +34,7 @@ export const api = {
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': getApiKey()
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     });
@@ -66,8 +45,7 @@ export const api = {
     const res = await fetch(`${API_BASE}${path}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': getApiKey()
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     });
@@ -76,10 +54,7 @@ export const api = {
 
   async delete(path) {
     const res = await fetch(`${API_BASE}${path}`, {
-      method: 'DELETE',
-      headers: {
-        'X-API-Key': getApiKey()
-      }
+      method: 'DELETE'
     });
     return handleResponse(res);
   }
