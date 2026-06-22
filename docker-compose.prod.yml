@@ -21,10 +21,10 @@ services:
     # Uses the pre-built Docker image pushed to Docker Hub by GitHub Actions
     image: ${DOCKER_IMAGE}
     restart: unless-stopped
-    # ports:
-    #   # Exposes port 8000 on the host. Traffic will be reachable securely 
-    #   # from any device in your Tailnet via http://<server-tailscale-ip>:8000
-    #   - "8000:8000"
+    ports:
+      # Exposes port 8000 on the host. Traffic will be reachable securely 
+      # from any device in your Tailnet via http://<server-tailscale-ip>:8000
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fitness-db:5432/${POSTGRES_DB}
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
