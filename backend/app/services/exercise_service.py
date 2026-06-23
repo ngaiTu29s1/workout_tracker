@@ -173,10 +173,19 @@ class ExerciseService:
         if not exercise:
             return None
 
+        old_name = exercise.name_eng
+
         # Apply updates
         update_data = schema.model_dump(exclude_unset=True)
         if "name_eng" in update_data and update_data["name_eng"]:
-            update_data["name_eng"] = title_case_name(update_data["name_eng"])
+            new_name = title_case_name(update_data["name_eng"])
+            if new_name != old_name:
+                # Also delete from enrichment_cache so that the old name is not recreated on startup/restart
+                from backend.app.models.enrichment_cache import EnrichmentCache
+                from sqlalchemy import delete
+                old_key = old_name.strip().lower()
+                await self.db.execute(delete(EnrichmentCache).where(EnrichmentCache.key == old_key))
+            update_data["name_eng"] = new_name
 
         for key, value in update_data.items():
             setattr(exercise, key, value)
@@ -195,6 +204,12 @@ class ExerciseService:
         exercise = await self.get_exercise(exercise_id)
         if not exercise:
             return False
+
+        # Also delete from enrichment_cache so that it is not recreated on startup/restart
+        from backend.app.models.enrichment_cache import EnrichmentCache
+        from sqlalchemy import delete
+        cache_key = exercise.name_eng.strip().lower()
+        await self.db.execute(delete(EnrichmentCache).where(EnrichmentCache.key == cache_key))
 
         await self.db.delete(exercise)
         await self.db.commit()

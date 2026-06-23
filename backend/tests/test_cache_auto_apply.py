@@ -9,7 +9,8 @@ from backend.app.models.exercise import ExerciseMaster
 from backend.app.models.pool import ExercisePool
 from backend.app.seed.seed_data import seed_pool, seed_personal_defaults, auto_apply_cache
 from backend.app.services.exercise_service import ExerciseService
-from backend.app.schemas.exercise import ExerciseCreate
+from backend.app.schemas.exercise import ExerciseCreate, ExerciseUpdate
+from backend.app.models.enrichment_cache import EnrichmentCache
 
 CACHE_PATH = os.path.join(os.getenv("POOL_DATA_PATH", "/app/static/pool"), "enrichment_cache.json")
 
@@ -142,3 +143,44 @@ async def test_cache_auto_apply_on_add_from_pool(db_session: AsyncSession):
     # Reload pool_fly to make sure database has written it back
     await db_session.refresh(pool_fly)
     assert pool_fly.instructions_vi == "Cách tập ép ngực dốc từ cache."
+
+@pytest.mark.asyncio
+async def test_cache_deleted_on_exercise_delete_and_rename(db_session: AsyncSession):
+    # 1. Verify we have "Cable Incline Fly" in personal and in cache
+    stmt = select(ExerciseMaster).where(ExerciseMaster.name_eng == "Cable Incline Fly")
+    fly = (await db_session.execute(stmt)).scalar_one_or_none()
+    assert fly is not None
+
+    stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "cable incline fly")
+    cache_entry = (await db_session.execute(stmt_cache)).scalar_one_or_none()
+    assert cache_entry is not None
+
+    # 2. Rename the exercise
+    service = ExerciseService(db_session)
+    await service.update_exercise(fly.id, ExerciseUpdate(name_eng="cable incline fly renamed"))
+
+    # Verify old cache key is deleted
+    stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "cable incline fly")
+    cache_entry = (await db_session.execute(stmt_cache)).scalar_one_or_none()
+    assert cache_entry is None
+
+    # 3. Delete the exercise
+    # Let's recreate "One Arm Swing" from cache first to test delete
+    schema = ExerciseCreate(
+        name_eng="one arm swing",
+        tracking_type="WEIGHT_REPS"
+    )
+    new_ex = await service.create_exercise(schema)
+    
+    # Verify cache entry for "one arm swing" is present (as it was loaded or generated)
+    stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "one arm swing")
+    cache_entry = (await db_session.execute(stmt_cache)).scalar_one_or_none()
+    assert cache_entry is not None
+
+    # Now delete the exercise
+    await service.delete_exercise(new_ex.id)
+
+    # Verify cache entry is deleted
+    stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "one arm swing")
+    cache_entry = (await db_session.execute(stmt_cache)).scalar_one_or_none()
+    assert cache_entry is None
