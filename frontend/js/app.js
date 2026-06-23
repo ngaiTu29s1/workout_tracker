@@ -49,6 +49,22 @@ document.addEventListener('alpine:init', () => {
     toasts: [],
     lang: 'vi',
     
+    getVideoEmbedUrl(url) {
+      if (!url) return null;
+      if (url.includes('youtube.com/watch?v=')) {
+        return 'https://www.youtube.com/embed/' + url.split('v=')[1].split('&')[0];
+      }
+      if (url.includes('youtu.be/')) {
+        return 'https://www.youtube.com/embed/' + url.split('youtu.be/')[1].split('?')[0];
+      }
+      return null;
+    },
+    
+    isDirectVideo(url) {
+      if (!url) return false;
+      return url.endsWith('.mp4') || url.endsWith('.webm') || url.includes('/pool/videos/');
+    },
+    
     toggleLang() {
       this.lang = this.lang === 'vi' ? 'en' : 'vi';
       this.addToast(`Switched language to ${this.lang.toUpperCase()}`, 'success');

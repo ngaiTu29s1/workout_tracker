@@ -7,6 +7,48 @@
         </div>
         <div class="modal-body">
             <form @submit.prevent="if(await $store.exercises.saveExercise()) { $store.exercises.modalOpen = false; }">
+                <!-- Exercise Preview (GIF / Video / Image) -->
+                <div class="form-group" x-show="$store.exercises.editingExercise && ($store.pool.getGifUrl($store.exercises.editingExercise) || $store.pool.getImageUrl($store.exercises.editingExercise))">
+                    <div style="text-align: center; margin-bottom: var(--space-md);">
+                        <!-- 1. Direct Video / GIF -->
+                        <template x-if="$store.pool.getGifUrl($store.exercises.editingExercise) && ($store.pool.getGifUrl($store.exercises.editingExercise).endsWith('.gif') || $store.pool.getGifUrl($store.exercises.editingExercise).includes('/pool/videos/'))">
+                            <img :src="$store.pool.getGifUrl($store.exercises.editingExercise).startsWith('/pool/') ? $store.pool.getGifUrl($store.exercises.editingExercise) : $store.pool.getGifUrl($store.exercises.editingExercise)"
+                                 class="exercise-gif"
+                                 alt="Exercise demonstration"
+                                 loading="lazy"
+                                 style="max-width: 100%; max-height: 220px; border-radius: var(--radius-md); object-fit: contain; margin-bottom: 0; background: rgba(0,0,0,0.2);">
+                        </template>
+                        <!-- 2. Standard Video Player (Embed/Direct/Link) -->
+                        <template x-if="$store.pool.getGifUrl($store.exercises.editingExercise) && !($store.pool.getGifUrl($store.exercises.editingExercise).endsWith('.gif') || $store.pool.getGifUrl($store.exercises.editingExercise).includes('/pool/videos/'))">
+                            <div>
+                                <template x-if="getVideoEmbedUrl($store.pool.getGifUrl($store.exercises.editingExercise))">
+                                    <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                        <iframe :src="getVideoEmbedUrl($store.pool.getGifUrl($store.exercises.editingExercise))" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                    </div>
+                                </template>
+                                <template x-if="isDirectVideo($store.pool.getGifUrl($store.exercises.editingExercise))">
+                                    <div class="video-container" style="border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-glass);">
+                                        <video controls :src="$store.pool.getGifUrl($store.exercises.editingExercise)" style="width: 100%; height: 100%; position: absolute; top:0; left:0;"></video>
+                                    </div>
+                                </template>
+                                <template x-if="!getVideoEmbedUrl($store.pool.getGifUrl($store.exercises.editingExercise)) && !isDirectVideo($store.pool.getGifUrl($store.exercises.editingExercise))">
+                                    <div>
+                                        <a :href="$store.pool.getGifUrl($store.exercises.editingExercise)" target="_blank" class="btn btn-secondary w-full">▶ Watch Video Guide</a>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <!-- 3. Static Image fallback -->
+                        <template x-if="!$store.pool.getGifUrl($store.exercises.editingExercise) && $store.pool.getImageUrl($store.exercises.editingExercise)">
+                            <img :src="$store.pool.getImageUrl($store.exercises.editingExercise)"
+                                 class="exercise-gif"
+                                 alt="Exercise thumbnail"
+                                 loading="lazy"
+                                 style="max-width: 100%; max-height: 220px; border-radius: var(--radius-md); object-fit: contain; margin-bottom: 0; background: rgba(0,0,0,0.2);">
+                        </template>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">English Name *</label>
                     <input type="text" class="form-control" placeholder="e.g., Barbell Squat" x-model="$store.exercises.form.name_eng" required :disabled="$store.exercises.editingExercise?.pool_id">
