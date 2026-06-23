@@ -21,7 +21,7 @@ services:
     # Uses the pre-built Docker image pushed to Docker Hub by GitHub Actions
     image: ${DOCKER_IMAGE}
     restart: unless-stopped
-    ports:
+    # ports:
       # Exposes port 8000 on the host. Traffic will be reachable securely 
       # from any device in your Tailnet via http://<server-tailscale-ip>:8000
       # - "8000:8000"
