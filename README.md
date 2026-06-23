@@ -1,68 +1,45 @@
-# 🏋️‍♂️ Fitness OS — Premium Workout Tracker & Planner
+# 🏋️‍♂️ Fitness OS — The Ultimate Gym Companion
 
-A premium, mobile-first Web App designed for seamless workout planning and tracking. Built with high-end aesthetics, full bilingual support, and smart AI enrichment.
-
----
-
-## ✨ Flex Features
-
-*   **💎 High-End Design**: Built using custom vanilla CSS featuring sleek dark mode, rich gradients, micro-animations, and premium glassmorphic cards.
-*   **📅 Interactive Weekly Planner**: Drag-and-drop routines (`Push`, `Pull`, `Legs`, etc.) to schedule your workouts dynamically (powered by SortableJS).
-*   **🪄 AI-Powered Enrichment (Auto-fill)**: Integrates with AI agents to automatically translate and enrich exercises with professional instructions, pro-tips, and muscle group tagging.
-*   **💾 Local Cache Optimizer**: Auto-caches AI data locally in a JSON file. Automatically restores and seeds custom user exercises (e.g. `One Arm Swing`) instantly even after resetting database containers.
-*   **🇻🇳 🇬🇧 Reactively Bilingual**: Instantly toggle the entire interface (names, guidelines, pro-tips, stats) between **Vietnamese** and **English** with zero reload.
-*   **📊 Rich Analytical Insights**: Beautiful, interactive charts showing volume progression and workout metrics over time (powered by Chart.js).
-*   **⚡ Lightweight Architecture**: Single-container deployment. FastAPI serves the async REST API and hosts the static SPA frontend simultaneously on a single port.
+> **Reclaim your workout rhythm.** A premium, mobile-first web console designed to bring structure, speed, and sleek aesthetics to your training. Beautifully responsive, reactively bilingual, and built for lifters who value both style and substance.
 
 ---
 
-## 🛠️ Tech Stack
+## 💎 Premium Design Aesthetics
 
-*   **Backend**: Python 3.12 + FastAPI (Async) + Uvicorn
-*   **Database & ORM**: PostgreSQL 16 + SQLAlchemy 2.0 (Async)
-*   **Frontend**: Vanilla HTML5 + Alpine.js + Vanilla CSS (No Tailwind)
-*   **Libraries**: SortableJS, Chart.js
-*   **DevOps**: Docker, Docker Compose
-
----
-
-## 🚀 Spin it up in 1 Command
-
-1. **Configure Environment**:
-   Copy `.env.example` to `.env` and configure your settings.
-   
-2. **Generate API Key**:
-   Fitness OS features a secure API Key authentication layer. Generate a secure random token and write it to `.env`:
-   ```bash
-   sed -i '/API_SECRET_KEY/d; /FITNESS_OS_API_KEY/d' .env && echo "FITNESS_OS_API_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
-   ```
-   *Note: On your first visit, the frontend will prompt you once to enter this API Key and will store it in `localStorage` for all future requests.*
-
-3. **Start the Stack**:
-   Start the entire stack (PostgreSQL + FastAPI + Frontend SPA) in development mode. Alembic database migrations will apply automatically on startup:
-   ```bash
-   docker compose up --build
-   ```
-
-Access the app at: **[http://localhost:8000](http://localhost:8000)**  
-Interactive Swagger API docs: **[http://localhost:8000/docs](http://localhost:8000/docs)**
+Fitness OS is engineered with a high-fidelity visual system designed to feel premium, immersive, and dark-mode-first:
+*   **Glassmorphic Console**: Cards and panels utilize frosted-glass backdrops (`backdrop-filter`) with semi-transparent borders for a modern, futuristic vibe.
+*   **Micro-Animations**: Experience smooth, responsive feedback with scale-down button presses, kinetic hover lifts, and fluid view transitions.
+*   **Mobile-First Touch Grid**: High-contrast labels and generous **48px+ finger-friendly touch targets** ensure seamless logging mid-set with sweaty hands.
+*   **Inter Typography**: Clean, high-readability fonts imported directly from Google Fonts for a professional dashboard experience.
 
 ---
 
-## ⚙️ Configuration & Migrations
+## ✨ Elite Features
 
-### Database Migrations (Alembic)
-Schema modifications are managed via Alembic. Although migrations run automatically on service start, you can manually run them:
-```bash
-docker compose exec fitness-backend alembic upgrade head
-```
-To generate a new migration after editing SQLAlchemy models:
-```bash
-docker compose exec fitness-backend alembic revision --autogenerate -m "description_of_changes"
-```
+### 📅 Smart Weekly Planner
+Plan your splits on a drag-and-drop interactive calendar. Effortlessly schedule your weekly routines (`Push`, `Pull`, `Legs`, etc.) or drag new templates into your calendar to dynamically override specific days.
 
-### Running Tests
-Execute the pytest suite within the backend container:
-```bash
-docker compose exec fitness-backend env PYTHONPATH=. pytest backend/tests/ -v
-```
+### 🪄 Exercise Pool Catalog
+Access a massive database of **1,324 exercises** complete with target muscle groups, required equipment, step-by-step instructions, and professional pro-tips. Quick-search the database with instant debouncing.
+
+### ⚙️ Automated Progression & overloading
+*   **Local Auto-fill**: Let the system automatically recommend exercises based on your active routine tag and historic performance, scheduling your progression path.
+*   **AI Suggestions**: Leverage intelligent, automated routing to autofill and translate guidelines, pro-tips, and muscle group tagging.
+
+### 🇻🇳 🇬🇧 Reactively Bilingual
+Switch the entire user interface, instructions, pro-tips, and analytical metrics between **Vietnamese** and **English** reactively. Zero page reloads required.
+
+### 💾 Local Cache Optimizer
+Your custom exercises and personalized edits are secured in a persistent local cache. Rebuild and reset container data at will without ever losing your custom modifications.
+
+### 📊 Rich Analytical Insights
+Visualize your progression trends over time with elegant, gradient-filled area charts tracking workout volumes, maximum weights, and repetition counts.
+
+---
+
+## 📱 The Console Layout
+
+*   **Catalog**: Manage, create, and browse your personal exercises and reference pool.
+*   **Calendar**: Map out your training week with a modular drag-and-drop palette.
+*   **Workout Session**: Input sets, repetitions, and weights reactively. Highlights recommended exercises matching your active split.
+*   **Analytics**: Review volume history and performance metrics with detailed interactive charts.
