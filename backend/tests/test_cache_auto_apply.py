@@ -146,7 +146,12 @@ async def test_cache_auto_apply_on_add_from_pool(db_session: AsyncSession):
 
 @pytest.mark.asyncio
 async def test_cache_deleted_on_exercise_delete_and_rename(db_session: AsyncSession):
-    # 1. Verify we have "Cable Incline Fly" in personal and in cache
+    # 1. Seed the pool, personal defaults, and run auto_apply_cache to populate Cache
+    await seed_pool(db_session)
+    await seed_personal_defaults(db_session)
+    await auto_apply_cache(db_session)
+
+    # Verify we have "Cable Incline Fly" in personal and in cache
     stmt = select(ExerciseMaster).where(ExerciseMaster.name_eng == "Cable Incline Fly")
     fly = (await db_session.execute(stmt)).scalar_one_or_none()
     assert fly is not None
