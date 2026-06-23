@@ -11,7 +11,7 @@ from backend.app.database import init_db, async_session_maker
 from backend.app.routers import exercises, presets, workouts, calendar, stats, pool
 from backend.app.seed import seed_db
 
-# Configure logging
+# Configure logging for production
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
