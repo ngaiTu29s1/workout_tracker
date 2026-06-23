@@ -170,20 +170,18 @@ async def test_cache_deleted_on_exercise_delete_and_rename(db_session: AsyncSess
     assert cache_entry is None
 
     # 3. Delete the exercise
-    # Let's recreate "One Arm Swing" from cache first to test delete
-    schema = ExerciseCreate(
-        name_eng="one arm swing",
-        tracking_type="WEIGHT_REPS"
-    )
-    new_ex = await service.create_exercise(schema)
+    # "One Arm Swing" was already created by auto_apply_cache
+    stmt_swing = select(ExerciseMaster).where(ExerciseMaster.name_eng == "One Arm Swing")
+    swing_ex = (await db_session.execute(stmt_swing)).scalar_one_or_none()
+    assert swing_ex is not None
     
-    # Verify cache entry for "one arm swing" is present (as it was loaded or generated)
+    # Verify cache entry for "one arm swing" is present
     stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "one arm swing")
     cache_entry = (await db_session.execute(stmt_cache)).scalar_one_or_none()
     assert cache_entry is not None
 
     # Now delete the exercise
-    await service.delete_exercise(new_ex.id)
+    await service.delete_exercise(swing_ex.id)
 
     # Verify cache entry is deleted
     stmt_cache = select(EnrichmentCache).where(EnrichmentCache.key == "one arm swing")
