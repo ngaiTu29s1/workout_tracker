@@ -17,6 +17,11 @@ document.addEventListener('alpine:init', () => {
       recent_activity: []
     },
     loadingOverview: false,
+
+    formatVolume(vol, lang) {
+      const v = Math.round(vol);
+      return v.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US') + ' kg';
+    },
     
     // Exercise specific trends
     selectedExerciseId: null,
