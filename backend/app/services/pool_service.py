@@ -105,21 +105,20 @@ class PoolService:
         # 3. Build conditions
         conditions = []
         
-        # Match original query words
-        words = query.strip().split()
-        pattern = "%" + "%".join(words) + "%"
-        conditions.append(ExercisePool.name.ilike(pattern))
-        conditions.append(ExercisePool.instructions_vi.ilike(pattern))
-        conditions.append(ExercisePool.target.ilike(pattern))
-        conditions.append(ExercisePool.equipment.ilike(pattern))
+        # Match original query words in any order
+        words = [w.strip() for w in query.split() if w.strip()]
+        if words:
+            conditions.append(and_(*[ExercisePool.name.ilike(f"%{w}%") for w in words]))
+            conditions.append(and_(*[ExercisePool.instructions_vi.ilike(f"%{w}%") for w in words]))
+            conditions.append(and_(*[ExercisePool.target.ilike(f"%{w}%") for w in words]))
+            conditions.append(and_(*[ExercisePool.equipment.ilike(f"%{w}%") for w in words]))
         
-        # Match cleaned query words
-        cleaned_words = cleaned_query.split()
-        cleaned_pattern = "%" + "%".join(cleaned_words) + "%"
-        if cleaned_pattern != pattern:
-            conditions.append(ExercisePool.name.ilike(cleaned_pattern))
-            conditions.append(ExercisePool.target.ilike(cleaned_pattern))
-            conditions.append(ExercisePool.equipment.ilike(cleaned_pattern))
+        # Match cleaned query words in any order
+        cleaned_words = [w.strip() for w in cleaned_query.split() if w.strip()]
+        if cleaned_words and cleaned_words != words:
+            conditions.append(and_(*[ExercisePool.name.ilike(f"%{w}%") for w in cleaned_words]))
+            conditions.append(and_(*[ExercisePool.target.ilike(f"%{w}%") for w in cleaned_words]))
+            conditions.append(and_(*[ExercisePool.equipment.ilike(f"%{w}%") for w in cleaned_words]))
             
         # Add expanded English terms
         for term in expanded_terms:
