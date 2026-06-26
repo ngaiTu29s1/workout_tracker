@@ -66,6 +66,33 @@ document.addEventListener('alpine:init', () => {
           });
         });
 
+        // Restore exercises that were added manually but not logged yet from localStorage
+        const addedStr = localStorage.getItem(`workout_session_added_${this.selectedDate}`);
+        if (addedStr) {
+          try {
+            const addedIds = JSON.parse(addedStr);
+            addedIds.forEach(id => {
+              // Only add if not already in combined (i.e. not already logged in DB)
+              const alreadyLogged = combined.some(item => item.exercise.id === id);
+              if (!alreadyLogged) {
+                const ex = exerciseStore.items.find(item => item.id === id);
+                if (ex) {
+                  combined.push({
+                    exercise: ex,
+                    logId: null,
+                    is_completed: false,
+                    tracking_data: [this.getDefaultSet(ex.tracking_type)],
+                    isLogged: false,
+                    isRecommended: this.matchesRoutine(ex, routineTag)
+                  });
+                }
+              }
+            });
+          } catch (e) {
+            console.error('Failed to parse added workout session exercises', e);
+          }
+        }
+
         // Sort combined list based on saved order in localStorage (if any)
         const savedOrderStr = localStorage.getItem(`workout_order_${this.selectedDate}`);
         if (savedOrderStr) {
@@ -102,6 +129,13 @@ document.addEventListener('alpine:init', () => {
       } finally {
         this.loading = false;
       }
+    },
+
+    saveAddedToLocalStorage() {
+      const unloggedIds = this.sessionExercises
+        .filter(item => !item.logId)
+        .map(item => item.exercise.id);
+      localStorage.setItem(`workout_session_added_${this.selectedDate}`, JSON.stringify(unloggedIds));
     },
 
     matchesRoutine(ex, tag) {
@@ -224,6 +258,8 @@ document.addEventListener('alpine:init', () => {
         sessionItem.is_completed = log.is_completed;
         sessionItem.tracking_data = JSON.parse(JSON.stringify(log.tracking_data));
 
+        this.saveAddedToLocalStorage();
+
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: 'Workout log saved!', type: 'success' }
         }));
@@ -287,6 +323,8 @@ document.addEventListener('alpine:init', () => {
           this.sessionExercises = this.sessionExercises.filter(item => item.exercise.id !== sessionItem.exercise.id);
         }
 
+        this.saveAddedToLocalStorage();
+
         window.dispatchEvent(new CustomEvent('toast', {
           detail: { message: 'Workout log deleted', type: 'success' }
         }));
@@ -327,6 +365,7 @@ document.addEventListener('alpine:init', () => {
         isLogged: false,
         isRecommended: false
       });
+      this.saveAddedToLocalStorage();
       this.activeExerciseId = ex.id;
       this.exerciseSearchQuery = '';
       this.exerciseSearchOpen = false;
@@ -674,6 +713,7 @@ document.addEventListener('alpine:init', () => {
             
             this.activeExerciseId = ex.id;
             this.sessionExercises = [...this.sessionExercises];
+            this.saveAddedToLocalStorage();
             
             window.dispatchEvent(new CustomEvent('toast', {
               detail: { 
@@ -716,6 +756,7 @@ document.addEventListener('alpine:init', () => {
       }
       
       this.sessionExercises = this.sessionExercises.filter(item => item.exercise.id !== sessionItem.exercise.id);
+      this.saveAddedToLocalStorage();
       
       const newOrder = this.sessionExercises.map(ex => ex.exercise.id);
       localStorage.setItem(`workout_order_${this.selectedDate}`, JSON.stringify(newOrder));

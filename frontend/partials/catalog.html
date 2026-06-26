@@ -66,7 +66,7 @@
                          loading="lazy"
                          @error="imgFailed = true">
                     <div class="exercise-card__placeholder" x-show="imgFailed || !$store.pool.getImageUrl(ex)">
-                        <span x-text="ex.name_eng?.charAt(0)?.toUpperCase()"></span>
+                        <span x-text="ex.name_eng ? ex.name_eng.charAt(0).toUpperCase() : ''"></span>
                     </div>
                 </div>
                 

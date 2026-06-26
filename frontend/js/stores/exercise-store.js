@@ -168,7 +168,7 @@ document.addEventListener('alpine:init', () => {
       this.modalOpen = true;
     },
 
-    async saveForm() {
+    async saveExercise() {
       // Parse lists from strings
       const secondary_muscle = this.form.secondary_muscle_str
         ? this.form.secondary_muscle_str.split(',').map(s => s.trim()).filter(Boolean)
