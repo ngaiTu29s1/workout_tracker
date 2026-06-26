@@ -83,7 +83,14 @@ document.addEventListener('alpine:init', () => {
 
     updateActivityChart() {
       const ctx = document.getElementById('activityChartCanvas');
-      if (!ctx || ctx.offsetParent === null) return; // view not loaded yet, canvas missing or hidden
+      if (!ctx || ctx.offsetParent === null) {
+        const appEl = document.querySelector('[x-data="app"]');
+        const activeView = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'activeView') : null;
+        if (activeView === 'stats') {
+          setTimeout(() => this.updateActivityChart(), 100);
+        }
+        return;
+      }
 
       // Reverse recent activity to show in chronological order
       const sortedActivity = [...this.overview.recent_activity].reverse();
@@ -174,7 +181,14 @@ document.addEventListener('alpine:init', () => {
 
     updateExerciseChart() {
       const ctx = document.getElementById('exerciseChartCanvas');
-      if (!ctx || ctx.offsetParent === null) return; // view not loaded yet or hidden
+      if (!ctx || ctx.offsetParent === null) {
+        const appEl = document.querySelector('[x-data="app"]');
+        const activeView = appEl && window.Alpine ? window.Alpine.evaluate(appEl, 'activeView') : null;
+        if (activeView === 'stats') {
+          setTimeout(() => this.updateExerciseChart(), 100);
+        }
+        return;
+      }
 
       const labels = this.exerciseHistory.map(h => {
         const dateObj = new Date(h.date);
