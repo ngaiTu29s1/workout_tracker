@@ -43,3 +43,29 @@ Visualize your progression trends over time with elegant, gradient-filled area c
 *   **Calendar**: Map out your training week with a modular drag-and-drop palette.
 *   **Workout Session**: Input sets, repetitions, and weights reactively. Highlights recommended exercises matching your active split.
 *   **Analytics**: Review volume history and performance metrics with detailed interactive charts.
+
+---
+
+## 🛠️ Developer Tooling
+
+| Tool | Purpose | Config |
+|---|---|---|
+| **Ruff** | Linter + formatter (Python) | `pyproject.toml` → `[tool.ruff]` |
+| **pre-commit** | Git hooks: Ruff + hygiene checks | `.pre-commit-config.yaml` |
+| **pytest** | Backend test suite | `backend/pytest.ini` (asyncio) |
+
+```sh
+# One-time: install dev deps + hooks locally
+pip install -r backend/requirements-dev.txt
+pre-commit install
+
+# Run Ruff without a local install (uses the Docker image)
+docker compose run --rm --no-deps --entrypoint sh fitness-backend -c \
+  'pip install -q ruff && ruff check backend && ruff format --check backend'
+
+# Run the test suite (needs a live DB)
+docker compose run --rm -e TESTING=True --entrypoint sh fitness-backend -c \
+  'env PYTHONPATH=. pytest backend/tests/ -v'
+```
+
+> Vietnamese search helpers (`remove_vietnamese_tones`, query expansion) live in `backend/app/services/search_config.py`, covered by `backend/tests/test_pool_search.py`. See `docs/tooling-setup.md` for details.

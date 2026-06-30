@@ -7,6 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.models.pool import ExercisePool
 from backend.app.models.exercise import ExerciseMaster
 from backend.app.services.exercise_service import title_case_name
+from backend.app.services.search_config import (
+    expand_vietnamese_terms,
+    remove_vietnamese_tones,
+)
 
 def infer_tracking_type(equipment: Optional[str], category: Optional[str]) -> str:
     eq = (equipment or "").lower()
@@ -17,64 +21,6 @@ def infer_tracking_type(equipment: Optional[str], category: Optional[str]) -> st
         return "TIME"
     else:
         return "WEIGHT_REPS"
-
-import re
-
-def remove_vietnamese_tones(s: str) -> str:
-    if not s:
-        return ""
-    # Map of accented characters
-    s = re.sub(r'[àáạảãâầấậẩẫăằắặẳẵ]', 'a', s)
-    s = re.sub(r'[èéẹẻẽêềếệểễ]', 'e', s)
-    s = re.sub(r'[ìíịỉĩ]', 'i', s)
-    s = re.sub(r'[òóọỏõôồốộổỗơờớợởỡ]', 'o', s)
-    s = re.sub(r'[ùúụủũưừứựửữ]', 'u', s)
-    s = re.sub(r'[ỳýỵỷỹ]', 'y', s)
-    s = re.sub(r'[đ]', 'd', s)
-    s = re.sub(r'[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]', 'A', s)
-    s = re.sub(r'[ÈÉẸẺẼÊỀẾỆỂỄ]', 'E', s)
-    s = re.sub(r'[ÌÍỊỈĨ]', 'I', s)
-    s = re.sub(r'[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]', 'O', s)
-    s = re.sub(r'[ÙÚỤỦŨƯỪỨỰỬỮ]', 'U', s)
-    s = re.sub(r'[ỲÝỴỶỸ]', 'Y', s)
-    s = re.sub(r'[Đ]', 'D', s)
-    return s
-
-VIETNAMESE_SEARCH_MAPPING = {
-    "day nguc": ["bench press", "chest press", "chest fly", "pushdown", "push-up", "dip"],
-    "day nguc ngang": ["bench press"],
-    "day nguc tren": ["incline press"],
-    "day nguc duoi": ["decline press"],
-    "day vai": ["overhead press", "shoulder press", "military press", "lateral raise", "front raise"],
-    "tay sau": ["tricep"],
-    "tay truoc": ["bicep", "curl"],
-    "cuon tay truoc": ["bicep curl"],
-    "keo cap": ["cable pull", "cable row", "cable pushdown", "lat pulldown"],
-    "keo xa": ["pull up", "pull-up", "chin up", "lat pulldown"],
-    "xa don": ["pull-up", "chin-up"],
-    "xa kep": ["dip"],
-    "chong day": ["push-up", "pushup"],
-    "hit dat": ["push-up", "pushup"],
-    "ganh ta": ["squat"],
-    "ganh ta don": ["barbell squat"],
-    "dap dui": ["leg press"],
-    "da dui": ["leg extension"],
-    "moc dui": ["leg curl"],
-    "dui sau": ["hamstring", "deadlift", "leg curl"],
-    "dui truoc": ["quadricep", "leg extension", "squat"],
-    "bap chuoi": ["calf", "calf raise"],
-    "nhon got": ["calf raise"],
-    "gap bung": ["crunch", "sit-up", "leg raise", "plank"],
-    "bung": ["abs", "abdominal", "crunch", "plank"],
-    "chay bo": ["treadmill", "run"],
-    "dap xe": ["bike", "cycle", "bicycle"],
-    "cheo thuyen": ["row", "rowing"],
-    "lung": ["back", "row", "lat pulldown", "deadlift"],
-    "xo": ["lat", "pulldown", "pull-up", "row"],
-    "vai": ["shoulder", "delt", "press", "lateral raise"],
-    "nguc": ["chest", "press", "fly", "bench press"],
-    "mong": ["glute", "hip thrust"],
-}
 
 class PoolService:
     def __init__(self, db: AsyncSession):
@@ -93,14 +39,7 @@ class PoolService:
         cleaned_query = remove_vietnamese_tones(query).strip().lower()
         
         # 2. Query expansion based on Vietnamese keywords
-        expanded_terms = []
-        for vi_key, en_terms in VIETNAMESE_SEARCH_MAPPING.items():
-            if vi_key in cleaned_query:
-                expanded_terms.extend(en_terms)
-        
-        # Remove duplicates
-        seen = set()
-        expanded_terms = [x for x in expanded_terms if not (x in seen or seen.add(x))]
+        expanded_terms = expand_vietnamese_terms(cleaned_query)
         
         # 3. Build conditions
         conditions = []
