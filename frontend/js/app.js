@@ -1,9 +1,9 @@
 // Import stores to execute and register them with Alpine
-import './stores/exercise-store.js?v=4';
-import './stores/calendar-store.js?v=4';
-import './stores/workout-store.js?v=4';
-import './stores/stats-store.js?v=4';
-import './stores/pool-store.js?v=4';
+import './stores/exercise-store.js?v=5';
+import './stores/calendar-store.js?v=5';
+import './stores/workout-store.js?v=5';
+import './stores/stats-store.js?v=5';
+import './stores/pool-store.js?v=5';
 
 document.addEventListener('alpine:init', () => {
   // Custom Confirm Dialog Store
@@ -48,6 +48,8 @@ document.addEventListener('alpine:init', () => {
     activeView: 'session',
     toasts: [],
     lang: 'vi',
+    appVersion: '',
+    appCommit: '',
     
     getVideoEmbedUrl(url) {
       if (!url) return null;
@@ -122,6 +124,25 @@ document.addEventListener('alpine:init', () => {
       
       // 3. Run routing on page load
       handleRoute();
+
+      // 4. Fetch version info (non-blocking, silent fail)
+      fetch('/api/version')
+        .then(r => r.json())
+        .then(res => {
+          this.appVersion = res.data.version;
+          this.appCommit = res.data.commit;
+        })
+        .catch(() => {});
+    },
+
+    copyVersion() {
+      if (!this.appVersion) return;
+      const text = this.appCommit
+        ? `v${this.appVersion} (${this.appCommit})`
+        : `v${this.appVersion}`;
+      navigator.clipboard.writeText(text).then(() => {
+        this.addToast('Copied', 'success');
+      }).catch(() => {});
     },
     
     fetchDataForView(view) {

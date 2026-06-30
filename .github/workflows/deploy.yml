@@ -92,6 +92,14 @@ jobs:
             type=sha,format=long
             type=raw,value=latest
 
+      - name: Read VERSION
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Set BUILD_TIME
+        id: build_time
+        run: echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -100,6 +108,10 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.version }}
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_TIME=${{ steps.build_time.outputs.time }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

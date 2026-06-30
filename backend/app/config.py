@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from pydantic import model_validator
 from typing import Optional
+from pathlib import Path
 
 class Settings(BaseSettings):
     # Database Settings
@@ -18,6 +19,11 @@ class Settings(BaseSettings):
     # App Settings
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
+
+    # Version Info
+    APP_VERSION: str = "0.0.0-dev"
+    GIT_COMMIT: str = "unknown"
+    BUILD_TIME: str = "unknown"
 
     # FITNESS_OS_API_KEY: A secret token used to authenticate clients.
     # The frontend fetches this from localStorage and sends it in the X-API-Key header.
@@ -42,6 +48,18 @@ class Settings(BaseSettings):
             api_key = data.get("FITNESS_OS_API_KEY")
             if not api_key:
                 data["FITNESS_OS_API_KEY"] = "change_me_api_key_fitness_os_123"
+
+            # Version info: if APP_VERSION is still the class default, try reading VERSION file
+            app_version = data.get("APP_VERSION", "0.0.0-dev")
+            if not app_version or app_version == "0.0.0-dev":
+                version_file = Path(__file__).resolve().parent.parent.parent / "VERSION"
+                if version_file.exists():
+                    data["APP_VERSION"] = version_file.read_text().strip()
+
+            # Truncate GIT_COMMIT to 7 characters (full SHA is passed in CI)
+            commit = data.get("GIT_COMMIT", "unknown")
+            if commit and commit not in ("unknown", "dev") and len(commit) > 7:
+                data["GIT_COMMIT"] = commit[:7]
         return data
 
     class Config:

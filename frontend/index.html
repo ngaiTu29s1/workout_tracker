@@ -29,8 +29,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     
     <!-- Core JS Application (registers stores and dynamically loads Alpine.js) -->
-    <script type="module" src="js/app.js?v=4"></script>
-    <script type="module" src="js/stores/pool-store.js?v=4"></script>
+    <script type="module" src="js/app.js?v=5"></script>
+    <script type="module" src="js/stores/pool-store.js?v=5"></script>
 </head>
 <body>
 
@@ -75,6 +75,9 @@
                 <span style="font-size: 20px;" x-text="lang === 'vi' ? '🇻🇳' : '🇬🇧'"></span>
                 <span x-text="lang === 'vi' ? 'Tiếng Việt' : 'English'"></span>
             </div>
+
+            <!-- Version Indicator -->
+            <span class="nav-version" @click="copyVersion()" x-text="'v' + appVersion + (appCommit ? ' · ' + appCommit : '')" x-show="appVersion"></span>
         </nav>
 
         <!-- Main Content Area -->

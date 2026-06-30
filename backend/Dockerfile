@@ -2,9 +2,20 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
+# Build arguments for version info
+ARG APP_VERSION
+ARG GIT_COMMIT
+ARG BUILD_TIME
+ENV APP_VERSION=${APP_VERSION:-0.0.0-dev}
+ENV GIT_COMMIT=${GIT_COMMIT:-unknown}
+ENV BUILD_TIME=${BUILD_TIME:-unknown}
+
 # Install dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy VERSION file (fallback for APP_VERSION)
+COPY VERSION ./
 
 # Copy backend code
 COPY backend/ ./backend/

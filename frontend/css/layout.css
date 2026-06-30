@@ -213,3 +213,24 @@
   display: none;
 }
 
+/* Version Indicator */
+.nav-version {
+  font-size: var(--font-xs, 11px);
+  color: var(--text-muted);
+  padding: var(--space-sm);
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.6;
+  user-select: none;
+}
+
+.nav-version:hover {
+  opacity: 1;
+}
+
+@media (max-height: 600px) {
+  .nav-version {
+    display: none;
+  }
+}
+
