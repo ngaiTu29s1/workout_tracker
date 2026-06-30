@@ -34,3 +34,11 @@ Thumbs.db
 
 # Dataset
 data/
+
+# Local dev / agent scaffolding (not for repo)
+.agents/
+.clinerules
+.qwen/
+docs/instructions/
+docs/prompts/
+skills-lock.json
